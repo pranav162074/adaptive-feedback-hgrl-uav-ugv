@@ -1,0 +1,10 @@
+scenario_id,density,clustered,dynamic
+0,0.1,clustered,static
+1,0.1,dispersed,static
+2,0.2,clustered,static
+3,0.2,clustered,dynamic
+4,0.2,dispersed,static
+5,0.4,clustered,static
+6,0.4,clustered,dynamic
+7,0.4,dispersed,static
+8,0.4,dispersed,dynamic
