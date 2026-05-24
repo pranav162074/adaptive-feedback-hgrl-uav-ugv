@@ -1,0 +1,28 @@
+{
+  "static_graph": {
+    "objective_mean": 79.26109745899036,
+    "collision_risk_mean": 0.0609456386745163,
+    "makespan_mean": 0.9236899832686498,
+    "energy_used_mean": 1.9650231180680682,
+    "completed_mean": 8.0,
+    "graph_updates_total": 0
+  },
+  "central_feedback_static_topology": {
+    "objective_mean": 76.45352169085601,
+    "collision_risk_mean": 0.07085472544624014,
+    "makespan_mean": 0.783678037436725,
+    "energy_used_mean": 1.5984930062791642,
+    "completed_mean": 8.0,
+    "graph_updates_total": 69
+  },
+  "adaptive_feedback_hgrl": {
+    "objective_mean": 73.53925661629735,
+    "collision_risk_mean": 0.025520977269951062,
+    "makespan_mean": 0.8214534661924049,
+    "energy_used_mean": 1.678975531630711,
+    "completed_mean": 8.0,
+    "graph_updates_total": 5
+  },
+  "adaptive_vs_static_objective_improvement_percent": 7.218977564187133,
+  "adaptive_vs_central_feedback_objective_improvement_percent": 3.811812732894956
+}
