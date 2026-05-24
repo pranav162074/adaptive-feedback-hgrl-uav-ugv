@@ -91,10 +91,7 @@ Generated files:
 - `risk_comparison.svg`: graph-ready collision-risk comparison.
 - `adaptive_scenario_map.svg`: example adaptive graph/path visualization.
 
-## How To Explain It In The Report
-
-Use this wording:
-
-> The proposed Adaptive Feedback-Driven Hierarchical Graph Reinforcement Learning framework separates task allocation and path planning into two hierarchical policies. The high-level policy assigns tasks based on estimated graph traversal cost and heterogeneous agent capability. The low-level policy performs feedback-aware path planning over an adaptive graph whose edge weights are updated using real-time obstacle and mission-state feedback. Unlike static graph approaches, the proposed method changes the graph during execution by penalizing or blocking risky edges, enabling safer replanning under dynamic environmental changes.
+## Our Method
+The proposed Adaptive Feedback-Driven Hierarchical Graph Reinforcement Learning framework separates task allocation and path planning into two hierarchical policies. The high-level policy assigns tasks based on estimated graph traversal cost and heterogeneous agent capability. The low-level policy performs feedback-aware path planning over an adaptive graph whose edge weights are updated using real-time obstacle and mission-state feedback. Unlike static graph approaches, the proposed method changes the graph during execution by penalizing or blocking risky edges, enabling safer replanning under dynamic environmental changes.
 
 For a stronger final paper implementation, this prototype can be extended by replacing the heuristic policy scoring with a trainable GNN actor-critic. The experiment harness, metrics, and adaptive graph update logic can remain the same.
