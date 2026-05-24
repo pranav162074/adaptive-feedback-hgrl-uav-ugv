@@ -1,9 +1,9 @@
 {
   "method": "centralized_feedback_graph_rl",
-  "objective_mean": 325.2887338701134,
-  "collision_risk_mean": 0.12745138383954968,
-  "completed_mean": 3.6666666666666665,
-  "reward_mean": -44.504360836827225,
-  "graph_updates_total": 1287,
-  "episodes_per_scenario": 120
+  "objective_mean": 163.50543068268132,
+  "collision_risk_mean": 0.04102642085087595,
+  "completed_mean": 5.444444444444445,
+  "reward_mean": 18.527045036641326,
+  "graph_updates_total": 1954,
+  "episodes_per_scenario": 250
 }
