@@ -14,6 +14,11 @@ The prototype uses the provided `uav_dataset` CSV files, including UAV starts/go
 
 ## What Is Implemented
 
+This repository now has two implementation layers:
+
+- `adaptive_hgrl.py`: the best-performing adaptive feedback-driven hierarchical graph planner used for baseline comparison and graphs.
+- `centralized_graph_rl.py`: an explicit centralized graph reinforcement learning trainer using tabular Q-learning, temporal-difference updates, centralized feedback rewards, and adaptive graph edge updates.
+
 `adaptive_hgrl.py` implements a hierarchical planner:
 
 1. High-level task allocation policy:
@@ -40,6 +45,29 @@ The prototype uses the provided `uav_dataset` CSV files, including UAV starts/go
 
 This is a practical, defensible prototype rather than a full deep-RL training pipeline. It preserves the research idea: centralized feedback modifies the graph online, while allocation and routing remain decoupled into hierarchical decisions.
 
+`centralized_graph_rl.py` adds the reinforcement-learning component:
+
+1. State:
+   - Current graph node.
+   - Goal node.
+   - Dynamic-obstacle risk bucket.
+   - Battery bucket.
+
+2. Actions:
+   - Movement to neighboring graph nodes.
+
+3. Centralized feedback reward:
+   - Positive reward for progress toward the assigned goal.
+   - Penalty for path cost, dynamic obstacle risk, and battery use.
+   - Terminal bonus for reaching the task goal.
+
+4. Learning:
+   - Q-values are updated using temporal-difference learning.
+   - Risky traversed edges update the adaptive graph feedback penalties.
+   - The trained value function is used for task assignment and path rollout.
+
+This means the repository does contain an actual Centralized Feedback-Driven Graph Reinforcement Learning component. The current RL learner is intentionally lightweight and dependency-free. For publication-grade deep GRL, the tabular Q-function can be replaced with a GNN actor-critic while keeping the same dataset loader, feedback reward design, adaptive graph update logic, and evaluation metrics.
+
 ## Run
 
 Use the bundled Codex Python runtime if your system Python does not have scientific packages:
@@ -52,6 +80,18 @@ Optional dynamic-only run:
 
 ```powershell
 & 'C:\Users\Pranav\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' .\adaptive_hgrl.py --scenarios 3,6,8
+```
+
+Run the explicit centralized graph RL trainer:
+
+```powershell
+python .\centralized_graph_rl.py
+```
+
+Faster dynamic-only RL smoke test:
+
+```powershell
+python .\centralized_graph_rl.py --scenarios 3,6,8 --episodes 120 --resolution 16
 ```
 
 Outputs are written to:
@@ -90,8 +130,10 @@ Generated files:
 - `objective_comparison.svg`: graph-ready objective comparison.
 - `risk_comparison.svg`: graph-ready collision-risk comparison.
 - `adaptive_scenario_map.svg`: example adaptive graph/path visualization.
+- `outputs/centralized_graph_rl/rl_metrics.csv`: trained RL evaluation metrics.
+- `outputs/centralized_graph_rl/rl_summary.json`: aggregate RL summary.
 
 ## Our Method
 The proposed Adaptive Feedback-Driven Hierarchical Graph Reinforcement Learning framework separates task allocation and path planning into two hierarchical policies. The high-level policy assigns tasks based on estimated graph traversal cost and heterogeneous agent capability. The low-level policy performs feedback-aware path planning over an adaptive graph whose edge weights are updated using real-time obstacle and mission-state feedback. Unlike static graph approaches, the proposed method changes the graph during execution by penalizing or blocking risky edges, enabling safer replanning under dynamic environmental changes.
 
-For a stronger final paper implementation, this prototype can be extended by replacing the heuristic policy scoring with a trainable GNN actor-critic. The experiment harness, metrics, and adaptive graph update logic can remain the same.
+For a stronger final paper implementation, this prototype can be extended by replacing the tabular Q-learning policy with a trainable GNN actor-critic. The experiment harness, metrics, centralized feedback reward, and adaptive graph update logic can remain the same.

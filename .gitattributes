@@ -1,0 +1,3 @@
+data_raw/** linguist-vendored
+outputs/** linguist-generated
+papers/** linguist-documentation
