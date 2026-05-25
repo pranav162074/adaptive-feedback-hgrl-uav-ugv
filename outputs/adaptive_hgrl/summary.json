@@ -1,28 +1,37 @@
 {
   "static_graph": {
-    "objective_mean": 79.26109745899036,
+    "objective_mean": 78.74401289530438,
     "collision_risk_mean": 0.0609456386745163,
     "makespan_mean": 0.9236899832686498,
-    "energy_used_mean": 1.9650231180680682,
+    "energy_used_mean": 1.3186674134606144,
     "completed_mean": 8.0,
-    "graph_updates_total": 0
+    "graph_updates_total": 0,
+    "min_battery_mean": 0.7728207250575375,
+    "battery_warnings_total": 0,
+    "recharge_visits_total": 0
   },
   "central_feedback_static_topology": {
-    "objective_mean": 76.45352169085601,
+    "objective_mean": 76.22397579191724,
     "collision_risk_mean": 0.07085472544624014,
     "makespan_mean": 0.783678037436725,
-    "energy_used_mean": 1.5984930062791642,
+    "energy_used_mean": 1.3115606326057037,
     "completed_mean": 8.0,
-    "graph_updates_total": 69
+    "graph_updates_total": 69,
+    "min_battery_mean": 0.7765317646455523,
+    "battery_warnings_total": 0,
+    "recharge_visits_total": 0
   },
   "adaptive_feedback_hgrl": {
-    "objective_mean": 73.53925661629735,
+    "objective_mean": 73.24637145725485,
     "collision_risk_mean": 0.025520977269951062,
     "makespan_mean": 0.8214534661924049,
-    "energy_used_mean": 1.678975531630711,
+    "energy_used_mean": 1.3128690828275933,
     "completed_mean": 8.0,
-    "graph_updates_total": 5
+    "graph_updates_total": 5,
+    "min_battery_mean": 0.7761656625654814,
+    "battery_warnings_total": 0,
+    "recharge_visits_total": 0
   },
-  "adaptive_vs_static_objective_improvement_percent": 7.218977564187133,
-  "adaptive_vs_central_feedback_objective_improvement_percent": 3.811812732894956
+  "adaptive_vs_static_objective_improvement_percent": 6.981662777789878,
+  "adaptive_vs_central_feedback_objective_improvement_percent": 3.9063881196526773
 }

@@ -1,0 +1,9 @@
+scenario_id,density,clustered,dynamic,map_width,map_height,mission_horizon,description
+0,0.12,clustered,static,1.0,1.0,80,clustered_static_battery_comm_terrain_case_0
+1,0.22,dispersed,dynamic,1.0,1.0,80,dispersed_dynamic_battery_comm_terrain_case_1
+2,0.34,clustered,static,1.0,1.0,80,clustered_static_battery_comm_terrain_case_2
+3,0.46,clustered,dynamic,1.0,1.0,80,clustered_dynamic_battery_comm_terrain_case_3
+4,0.12,dispersed,static,1.0,1.0,80,dispersed_static_battery_comm_terrain_case_4
+5,0.22,clustered,dynamic,1.0,1.0,80,clustered_dynamic_battery_comm_terrain_case_5
+6,0.34,clustered,static,1.0,1.0,80,clustered_static_battery_comm_terrain_case_6
+7,0.46,dispersed,dynamic,1.0,1.0,80,dispersed_dynamic_battery_comm_terrain_case_7

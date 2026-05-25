@@ -18,6 +18,7 @@ This repository now has two implementation layers:
 
 - `adaptive_hgrl.py`: the best-performing adaptive feedback-driven hierarchical graph planner used for baseline comparison and graphs.
 - `centralized_graph_rl.py`: an explicit centralized graph reinforcement learning trainer using tabular Q-learning, temporal-difference updates, centralized feedback rewards, and adaptive graph edge updates.
+- `generate_complete_benchmark.py`: creates a complete UAV/UGV benchmark with heterogeneous agents, battery, UGV recharge support, terrain cost, communication events, deadlines, priorities, and centralized feedback events.
 
 `adaptive_hgrl.py` implements a hierarchical planner:
 
@@ -34,12 +35,16 @@ This repository now has two implementation layers:
    - Static obstacle risk is precomputed into the graph.
    - Dynamic obstacle feedback updates edge penalties.
    - Risky edges can become temporarily blocked, forcing the next replan to use safer alternatives.
+   - Low UAV battery increases traversal cost and can route agents toward UGV recharge/support nodes.
 
 4. Multi-objective evaluation:
    - Path cost.
    - Makespan.
    - Collision risk.
    - Energy use.
+   - Minimum remaining battery.
+   - Battery warning count.
+   - UGV recharge/support visits.
    - Completion count.
    - Fairness/load balance.
 
@@ -68,6 +73,32 @@ This is a practical, defensible prototype rather than a full deep-RL training pi
 
 This means the repository does contain an actual Centralized Feedback-Driven Graph Reinforcement Learning component. The current RL learner is intentionally lightweight and dependency-free. For publication-grade deep GRL, the tabular Q-function can be replaced with a GNN actor-critic while keeping the same dataset loader, feedback reward design, adaptive graph update logic, and evaluation metrics.
 
+## Complete Benchmark Dataset
+
+The enhanced benchmark is stored in:
+
+```text
+data_raw/complete_adaptive_benchmark/
+```
+
+It contains:
+
+- `agents.csv`: UAV/UGV type, start position, speed, battery, energy rate, communication range, payload, sensor range, and recharge capability.
+- `tasks.csv`: task location, priority, deadline, payload requirement, and UAV/UGV requirement.
+- `static_obstacles.csv`: static obstacle points.
+- `dynamic_obstacles.csv`: moving obstacle positions over time.
+- `terrain_cost.csv`: terrain difficulty cells.
+- `communication_events.csv`: communication degradation zones.
+- `battery_events.csv`: per-agent battery warning/drop events.
+- `feedback_events.csv`: centralized risk feedback zones.
+- `uav_positions.csv`: compatibility file for the original UAV-only loader.
+
+Regenerate it with:
+
+```powershell
+python .\generate_complete_benchmark.py
+```
+
 ## Run
 
 Use the bundled Codex Python runtime if your system Python does not have scientific packages:
@@ -92,6 +123,18 @@ Faster dynamic-only RL smoke test:
 
 ```powershell
 python .\centralized_graph_rl.py --scenarios 3,6,8 --episodes 120 --resolution 16
+```
+
+Run the enhanced planner on the complete UAV/UGV benchmark:
+
+```powershell
+python .\adaptive_hgrl.py --dataset data_raw/complete_adaptive_benchmark --out outputs/complete_adaptive_hgrl
+```
+
+Run the enhanced RL trainer on the complete benchmark:
+
+```powershell
+python .\centralized_graph_rl.py --dataset data_raw/complete_adaptive_benchmark --out outputs/complete_centralized_graph_rl --episodes 120 --resolution 16
 ```
 
 Outputs are written to:
@@ -129,11 +172,16 @@ Generated files:
 - `summary.json`: aggregate comparison.
 - `objective_comparison.svg`: graph-ready objective comparison.
 - `risk_comparison.svg`: graph-ready collision-risk comparison.
+- `battery_comparison.svg`: graph-ready minimum battery comparison.
 - `adaptive_scenario_map.svg`: example adaptive graph/path visualization.
 - `outputs/centralized_graph_rl/rl_metrics.csv`: trained RL evaluation metrics.
 - `outputs/centralized_graph_rl/rl_summary.json`: aggregate RL summary.
 
 ## Our Method
 The proposed Adaptive Feedback-Driven Hierarchical Graph Reinforcement Learning framework separates task allocation and path planning into two hierarchical policies. The high-level policy assigns tasks based on estimated graph traversal cost and heterogeneous agent capability. The low-level policy performs feedback-aware path planning over an adaptive graph whose edge weights are updated using real-time obstacle and mission-state feedback. Unlike static graph approaches, the proposed method changes the graph during execution by penalizing or blocking risky edges, enabling safer replanning under dynamic environmental changes.
+
+Battery-aware extension:
+
+The enhanced version tracks each UAV and UGV battery level throughout the mission. Battery status is treated as centralized feedback: low-battery UAVs receive higher traversal costs for energy-expensive graph edges, task allocation is biased toward reachable tasks, and UAVs can be routed toward UGV support/charging nodes when battery drops below a threshold. A task is counted as successful only if the assigned agent reaches it with usable remaining battery.
 
 For a stronger final paper implementation, this prototype can be extended by replacing the tabular Q-learning policy with a trainable GNN actor-critic. The experiment harness, metrics, centralized feedback reward, and adaptive graph update logic can remain the same.

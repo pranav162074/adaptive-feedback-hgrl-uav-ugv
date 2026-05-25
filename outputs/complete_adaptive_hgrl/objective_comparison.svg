@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="#f8faf8"/>
+<text x="450.0" y="34" text-anchor="middle" font-size="24" font-family="Arial" fill="#172026">Lower Multi-Objective Score Is Better</text>
+<line x1="70" y1="450" x2="830" y2="450" stroke="#172026"/>
+<line x1="70" y1="70" x2="70" y2="450" stroke="#172026"/>
+<text x="22" y="260.0" transform="rotate(-90 22 260.0)" text-anchor="middle" font-size="14" font-family="Arial">objective</text>
+<g font-family="Arial" fill="#172026"><rect x="117.1" y="70.0" width="157.1" height="380.0" rx="5" fill="#52616b"/><text x="195.7" y="485" text-anchor="middle" font-size="14">static_graph</text><text x="195.7" y="62.0" text-anchor="middle" font-size="14">176.832</text><rect x="370.5" y="71.1" width="157.1" height="378.9" rx="5" fill="#c7792f"/><text x="449.0" y="485" text-anchor="middle" font-size="14">central_feedback_static_topology</text><text x="449.0" y="63.1" text-anchor="middle" font-size="14">176.331</text><rect x="623.8" y="202.9" width="157.1" height="247.1" rx="5" fill="#138a72"/><text x="702.3" y="485" text-anchor="middle" font-size="14">adaptive_feedback_hgrl</text><text x="702.3" y="194.9" text-anchor="middle" font-size="14">114.982</text></g>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "method": "centralized_feedback_graph_rl",
+  "objective_mean": 479.4839211458276,
+  "collision_risk_mean": 0.0105250752360851,
+  "completed_mean": 1.25,
+  "reward_mean": 29.188415616165898,
+  "graph_updates_total": 189,
+  "min_battery_mean": 0.0,
+  "battery_warnings_total": 64,
+  "recharge_visits_total": 0,
+  "episodes_per_scenario": 120
+}

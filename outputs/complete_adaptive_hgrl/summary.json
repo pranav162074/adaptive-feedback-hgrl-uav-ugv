@@ -1,0 +1,37 @@
+{
+  "static_graph": {
+    "objective_mean": 176.8323935799235,
+    "collision_risk_mean": 0.0,
+    "makespan_mean": 0.8899520682315506,
+    "energy_used_mean": 7.051770943413319,
+    "completed_mean": 5.5,
+    "graph_updates_total": 0,
+    "min_battery_mean": 0.0,
+    "battery_warnings_total": 64,
+    "recharge_visits_total": 0
+  },
+  "central_feedback_static_topology": {
+    "objective_mean": 176.33082409087342,
+    "collision_risk_mean": 0.0,
+    "makespan_mean": 0.7838223460958273,
+    "energy_used_mean": 7.0522634876475,
+    "completed_mean": 5.5,
+    "graph_updates_total": 0,
+    "min_battery_mean": 0.0,
+    "battery_warnings_total": 64,
+    "recharge_visits_total": 0
+  },
+  "adaptive_feedback_hgrl": {
+    "objective_mean": 114.98202869460673,
+    "collision_risk_mean": 0.04737540734547407,
+    "makespan_mean": 1.879620096012903,
+    "energy_used_mean": 5.5612095885625665,
+    "completed_mean": 8.0,
+    "graph_updates_total": 1,
+    "min_battery_mean": 0.2069355296180112,
+    "battery_warnings_total": 64,
+    "recharge_visits_total": 60
+  },
+  "adaptive_vs_static_objective_improvement_percent": 34.976829546427005,
+  "adaptive_vs_central_feedback_objective_improvement_percent": 34.79187244349867
+}
