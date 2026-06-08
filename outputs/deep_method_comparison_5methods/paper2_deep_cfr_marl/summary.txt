@@ -1,0 +1,24 @@
+Method: paper2_deep_cfr_marl
+============================
+
+method: paper2_deep_cfr_marl
+scenario_count: 8
+objective_mean: 927.179550
+completed_mean: 5.500000
+collision_risk_mean: 0.003385
+makespan_mean: 0.889952
+energy_used_mean: 7.051833
+min_battery_mean: 0.000000
+battery_warnings_total: 64
+recharge_visits_total: 0
+graph_updates_total: 0
+
+Per-scenario numeric outputs:
+scenario=0 objective=913.3530 completed=6 makespan=0.8270 energy=6.8403 min_battery=0.0000 risk=0.0000
+scenario=1 objective=913.4260 completed=6 makespan=0.7764 energy=7.0794 min_battery=0.0000 risk=0.0000
+scenario=2 objective=964.3979 completed=4 makespan=0.9337 energy=7.3219 min_battery=0.0000 risk=0.0000
+scenario=3 objective=913.9043 completed=6 makespan=0.8943 energy=6.8392 min_battery=0.0000 risk=0.0000
+scenario=4 objective=915.2507 completed=6 makespan=0.8519 energy=7.0824 min_battery=0.0000 risk=0.0000
+scenario=5 objective=965.0089 completed=4 makespan=0.9111 energy=7.3272 min_battery=0.0000 risk=0.0000
+scenario=6 objective=915.1452 completed=6 makespan=0.9698 energy=6.8437 min_battery=0.0000 risk=0.0000
+scenario=7 objective=916.9505 completed=6 makespan=0.9555 energy=7.0806 min_battery=0.0000 risk=0.0271

@@ -1,0 +1,24 @@
+Method: proposed_adaptive_hgrl
+==============================
+
+method: proposed_adaptive_hgrl
+scenario_count: 8
+objective_mean: 114.982029
+completed_mean: 8.000000
+collision_risk_mean: 0.047375
+makespan_mean: 1.879620
+energy_used_mean: 5.561210
+min_battery_mean: 0.206936
+battery_warnings_total: 64
+recharge_visits_total: 60
+graph_updates_total: 1
+
+Per-scenario numeric outputs:
+scenario=0 objective=108.1061 completed=8 makespan=1.7525 energy=5.4710 min_battery=0.2078 risk=0.0143
+scenario=1 objective=109.4665 completed=8 makespan=1.6768 energy=5.5034 min_battery=0.2074 risk=0.0162
+scenario=2 objective=112.3528 completed=8 makespan=1.8522 energy=5.5337 min_battery=0.2078 risk=0.0332
+scenario=3 objective=115.4529 completed=8 makespan=1.9113 energy=5.6111 min_battery=0.2072 risk=0.0678
+scenario=4 objective=115.7863 completed=8 makespan=1.8233 energy=5.4871 min_battery=0.2074 risk=0.0650
+scenario=5 objective=120.8266 completed=8 makespan=1.8834 energy=5.8865 min_battery=0.2058 risk=0.0908
+scenario=6 objective=110.4182 completed=8 makespan=1.7884 energy=5.4739 min_battery=0.2067 risk=0.0300
+scenario=7 objective=127.4469 completed=8 makespan=2.3491 energy=5.5229 min_battery=0.2053 risk=0.0617

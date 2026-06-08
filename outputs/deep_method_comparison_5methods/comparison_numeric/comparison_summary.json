@@ -1,0 +1,75 @@
+{
+  "methods": {
+    "paper1_deep_hgrl_ugv_assisted": {
+      "method": "paper1_deep_hgrl_ugv_assisted",
+      "scenario_count": 8,
+      "objective_mean": 126.76742332091382,
+      "completed_mean": 5.5,
+      "collision_risk_mean": 0.0019627525031430918,
+      "makespan_mean": 0.8458117125385243,
+      "energy_used_mean": 7.05165141186011,
+      "min_battery_mean": 0.0,
+      "battery_warnings_total": 64,
+      "recharge_visits_total": 0,
+      "graph_updates_total": 0
+    },
+    "paper2_deep_cfr_marl": {
+      "method": "paper2_deep_cfr_marl",
+      "scenario_count": 8,
+      "objective_mean": 927.179549619589,
+      "completed_mean": 5.5,
+      "collision_risk_mean": 0.003385469256779479,
+      "makespan_mean": 0.8899520682315506,
+      "energy_used_mean": 7.0518329467295775,
+      "min_battery_mean": 0.0,
+      "battery_warnings_total": 64,
+      "recharge_visits_total": 0,
+      "graph_updates_total": 0
+    },
+    "paper3_deep_energy_uav_ugv_drl": {
+      "method": "paper3_deep_energy_uav_ugv_drl",
+      "scenario_count": 8,
+      "objective_mean": 307.08182910297865,
+      "completed_mean": 8.0,
+      "collision_risk_mean": 0.11385487988308882,
+      "makespan_mean": 1.8321848401702254,
+      "energy_used_mean": 5.809866842922606,
+      "min_battery_mean": 0.20557111880893447,
+      "battery_warnings_total": 64,
+      "recharge_visits_total": 45,
+      "graph_updates_total": 0
+    },
+    "paper4_deep_tanet_td3_multi_uav": {
+      "method": "paper4_deep_tanet_td3_multi_uav",
+      "scenario_count": 8,
+      "objective_mean": 927.1035518592921,
+      "completed_mean": 5.5,
+      "collision_risk_mean": 0.0025235389326125463,
+      "makespan_mean": 0.8784684535682277,
+      "energy_used_mean": 7.051296479472388,
+      "min_battery_mean": 0.0,
+      "battery_warnings_total": 64,
+      "recharge_visits_total": 0,
+      "graph_updates_total": 0
+    },
+    "proposed_adaptive_hgrl": {
+      "method": "proposed_adaptive_hgrl",
+      "scenario_count": 8,
+      "objective_mean": 114.98202869460673,
+      "completed_mean": 8.0,
+      "collision_risk_mean": 0.04737540734547407,
+      "makespan_mean": 1.879620096012903,
+      "energy_used_mean": 5.5612095885625665,
+      "min_battery_mean": 0.2069355296180112,
+      "battery_warnings_total": 64,
+      "recharge_visits_total": 60,
+      "graph_updates_total": 1
+    }
+  },
+  "lower_objective_is_better": true,
+  "higher_completed_mean_is_better": true,
+  "proposed_improvement_vs_paper1_deep_hgrl_ugv_assisted_percent": 9.296863750612154,
+  "proposed_improvement_vs_paper2_deep_cfr_marl_percent": 87.59873114740479,
+  "proposed_improvement_vs_paper3_deep_energy_uav_ugv_drl_percent": 62.556550796091564,
+  "proposed_improvement_vs_paper4_deep_tanet_td3_multi_uav_percent": 87.59771457416898
+}

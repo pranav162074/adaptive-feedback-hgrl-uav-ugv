@@ -1,0 +1,24 @@
+Method: paper1_deep_hgrl_ugv_assisted
+=====================================
+
+method: paper1_deep_hgrl_ugv_assisted
+scenario_count: 8
+objective_mean: 126.767423
+completed_mean: 5.500000
+collision_risk_mean: 0.001963
+makespan_mean: 0.845812
+energy_used_mean: 7.051651
+min_battery_mean: 0.000000
+battery_warnings_total: 64
+recharge_visits_total: 0
+graph_updates_total: 0
+
+Per-scenario numeric outputs:
+scenario=0 objective=112.9053 completed=6 makespan=0.7793 energy=6.8399 min_battery=0.0000 risk=0.0000
+scenario=1 objective=113.4121 completed=6 makespan=0.8187 energy=7.0782 min_battery=0.0000 risk=0.0000
+scenario=2 objective=164.0959 completed=4 makespan=0.8187 energy=7.3216 min_battery=0.0000 risk=0.0000
+scenario=3 objective=113.3989 completed=6 makespan=0.8106 energy=6.8428 min_battery=0.0000 risk=0.0000
+scenario=4 objective=114.8057 completed=6 makespan=0.8269 energy=7.0827 min_battery=0.0000 risk=0.0000
+scenario=5 objective=165.3366 completed=4 makespan=0.9192 energy=7.3204 min_battery=0.0000 risk=0.0000
+scenario=6 objective=114.4297 completed=6 makespan=0.8600 energy=6.8454 min_battery=0.0000 risk=0.0000
+scenario=7 objective=115.7552 completed=6 makespan=0.9330 energy=7.0822 min_battery=0.0000 risk=0.0157

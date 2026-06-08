@@ -1,0 +1,24 @@
+Method: paper4_deep_tanet_td3_multi_uav
+=======================================
+
+method: paper4_deep_tanet_td3_multi_uav
+scenario_count: 8
+objective_mean: 927.103552
+completed_mean: 5.500000
+collision_risk_mean: 0.002524
+makespan_mean: 0.878468
+energy_used_mean: 7.051296
+min_battery_mean: 0.000000
+battery_warnings_total: 64
+recharge_visits_total: 0
+graph_updates_total: 0
+
+Per-scenario numeric outputs:
+scenario=0 objective=913.0447 completed=6 makespan=0.8385 energy=6.8420 min_battery=0.0000 risk=0.0000
+scenario=1 objective=913.9976 completed=6 makespan=0.8664 energy=7.0768 min_battery=0.0000 risk=0.0000
+scenario=2 objective=964.5002 completed=4 makespan=0.8437 energy=7.3214 min_battery=0.0000 risk=0.0000
+scenario=3 objective=913.7276 completed=6 makespan=0.8943 energy=6.8409 min_battery=0.0000 risk=0.0000
+scenario=4 objective=915.2341 completed=6 makespan=0.8943 energy=7.0813 min_battery=0.0000 risk=0.0000
+scenario=5 objective=965.7617 completed=4 makespan=1.0092 energy=7.3227 min_battery=0.0000 risk=0.0000
+scenario=6 objective=914.6170 completed=6 makespan=0.8437 energy=6.8449 min_battery=0.0000 risk=0.0000
+scenario=7 objective=915.9455 completed=6 makespan=0.8378 energy=7.0804 min_battery=0.0000 risk=0.0202
