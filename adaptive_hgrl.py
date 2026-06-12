@@ -19,9 +19,27 @@ Node = Tuple[int, int]
 Edge = Tuple[Node, Node]
 
 
+def scenario_key(value) -> str:
+    text = str(value).strip()
+    if text.upper().startswith("S"):
+        return "S" + str(int(text[1:]))
+    return "S" + str(int(text) + 1)
+
+
+def scenario_number(value) -> int:
+    text = str(value).strip()
+    if text.upper().startswith("S"):
+        return int(text[1:])
+    return int(text) + 1
+
+
+def scenario_sort_key(value) -> int:
+    return scenario_number(value)
+
+
 @dataclass(frozen=True)
 class Scenario:
-    scenario_id: int
+    scenario_id: str
     density: float
     clustered: str
     dynamic: str
@@ -57,7 +75,7 @@ class AgentProfile:
 
 @dataclass
 class PlanMetrics:
-    scenario_id: int
+    scenario_id: str
     method: str
     total_cost: float
     makespan: float
@@ -99,29 +117,29 @@ class UAVDataset:
         self.feedback_events = self._load_spatial_events("feedback_events.csv")
         self.battery_events = self._load_battery_events()
 
-    def _load_scenarios(self) -> Dict[int, Scenario]:
-        rows: Dict[int, Scenario] = {}
+    def _load_scenarios(self) -> Dict[str, Scenario]:
+        rows: Dict[str, Scenario] = {}
         with (self.root / "scenarios.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = int(row["scenario_id"])
+                sid = scenario_key(row["scenario_id"])
                 rows[sid] = Scenario(sid, float(row["density"]), row["clustered"], row["dynamic"])
         return rows
 
-    def _load_tasks(self) -> Dict[int, List[AgentTask]]:
-        tasks: Dict[int, List[AgentTask]] = defaultdict(list)
+    def _load_tasks(self) -> Dict[str, List[AgentTask]]:
+        tasks: Dict[str, List[AgentTask]] = defaultdict(list)
         rich_tasks = self.root / "tasks.csv"
         agents_file = self.root / "agents.csv"
         if rich_tasks.exists() and agents_file.exists():
-            starts: Dict[int, List[Tuple[int, Point]]] = defaultdict(list)
+            starts: Dict[str, List[Tuple[int, Point]]] = defaultdict(list)
             with agents_file.open(newline="") as f:
                 for row in csv.DictReader(f):
                     if row["type"].upper() == "UAV":
-                        sid = int(row["scenario_id"])
+                        sid = scenario_key(row["scenario_id"])
                         uid = int(row["agent_id"].split("_")[-1])
                         starts[sid].append((uid, (float(row["start_x"]), float(row["start_y"]))))
             with rich_tasks.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = int(row["scenario_id"])
+                    sid = scenario_key(row["scenario_id"])
                     if row.get("requires_uav", "true").lower() != "true":
                         continue
                     available = sorted(starts.get(sid, []))
@@ -144,7 +162,7 @@ class UAVDataset:
             return tasks
         with (self.root / "uav_positions.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = int(row["scenario_id"])
+                sid = scenario_key(row["scenario_id"])
                 tasks[sid].append(
                     AgentTask(
                         int(row["uav_id"]),
@@ -154,29 +172,29 @@ class UAVDataset:
                 )
         return tasks
 
-    def _load_static_obstacles(self) -> Dict[int, List[Point]]:
-        obs: Dict[int, List[Point]] = defaultdict(list)
+    def _load_static_obstacles(self) -> Dict[str, List[Point]]:
+        obs: Dict[str, List[Point]] = defaultdict(list)
         with (self.root / "static_obstacles.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                obs[int(row["scenario_id"])].append((float(row["x"]), float(row["y"])))
+                obs[scenario_key(row["scenario_id"])].append((float(row["x"]), float(row["y"])))
         return obs
 
-    def _load_dynamic_obstacles(self) -> Dict[int, Dict[int, List[Point]]]:
-        obs: Dict[int, Dict[int, List[Point]]] = defaultdict(lambda: defaultdict(list))
+    def _load_dynamic_obstacles(self) -> Dict[str, Dict[int, List[Point]]]:
+        obs: Dict[str, Dict[int, List[Point]]] = defaultdict(lambda: defaultdict(list))
         with (self.root / "dynamic_obstacles.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = int(row["scenario_id"])
+                sid = scenario_key(row["scenario_id"])
                 time_step = int(row["time_step"])
                 obs[sid][time_step].append((float(row["x"]), float(row["y"])))
         return obs
 
-    def _load_agents(self) -> Dict[int, Dict[str, AgentProfile]]:
-        agents: Dict[int, Dict[str, AgentProfile]] = defaultdict(dict)
+    def _load_agents(self) -> Dict[str, Dict[str, AgentProfile]]:
+        agents: Dict[str, Dict[str, AgentProfile]] = defaultdict(dict)
         path = self.root / "agents.csv"
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = int(row["scenario_id"])
+                    sid = scenario_key(row["scenario_id"])
                     profile = AgentProfile(
                         row["agent_id"],
                         row["type"].upper(),
@@ -201,22 +219,22 @@ class UAVDataset:
                 agents[sid]["UGV_0"] = AgentProfile("UGV_0", "UGV", (0.08, 0.08), 0.55, 300.0, 280.0, 0.22, 0.48, 8.0, 0.18, True, 4.0)
         return agents
 
-    def _load_terrain_cost(self) -> Dict[int, List[Tuple[Point, float]]]:
-        terrain: Dict[int, List[Tuple[Point, float]]] = defaultdict(list)
+    def _load_terrain_cost(self) -> Dict[str, List[Tuple[Point, float]]]:
+        terrain: Dict[str, List[Tuple[Point, float]]] = defaultdict(list)
         path = self.root / "terrain_cost.csv"
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    terrain[int(row["scenario_id"])].append(((float(row["x"]), float(row["y"])), float(row["terrain_cost"])))
+                    terrain[scenario_key(row["scenario_id"])].append(((float(row["x"]), float(row["y"])), float(row["terrain_cost"])))
         return terrain
 
-    def _load_spatial_events(self, filename: str) -> Dict[int, Dict[int, List[Tuple[Point, float, float]]]]:
-        events: Dict[int, Dict[int, List[Tuple[Point, float, float]]]] = defaultdict(lambda: defaultdict(list))
+    def _load_spatial_events(self, filename: str) -> Dict[str, Dict[int, List[Tuple[Point, float, float]]]]:
+        events: Dict[str, Dict[int, List[Tuple[Point, float, float]]]] = defaultdict(lambda: defaultdict(list))
         path = self.root / filename
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = int(row["scenario_id"])
+                    sid = scenario_key(row["scenario_id"])
                     time_step = int(row["time_step"])
                     x = row.get("x", "")
                     y = row.get("y", "")
@@ -224,13 +242,13 @@ class UAVDataset:
                         events[sid][time_step].append(((float(x), float(y)), float(row.get("radius", 0.1)), float(row.get("severity", 0.5))))
         return events
 
-    def _load_battery_events(self) -> Dict[int, Dict[int, List[Tuple[str, float, float]]]]:
-        events: Dict[int, Dict[int, List[Tuple[str, float, float]]]] = defaultdict(lambda: defaultdict(list))
+    def _load_battery_events(self) -> Dict[str, Dict[int, List[Tuple[str, float, float]]]]:
+        events: Dict[str, Dict[int, List[Tuple[str, float, float]]]] = defaultdict(lambda: defaultdict(list))
         path = self.root / "battery_events.csv"
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    events[int(row["scenario_id"])][int(row["time_step"])].append((row["agent_id"], float(row["battery_delta"]), float(row.get("severity", 0.5))))
+                    events[scenario_key(row["scenario_id"])][int(row["time_step"])].append((row["agent_id"], float(row["battery_delta"]), float(row.get("severity", 0.5))))
         return events
 
 
@@ -558,7 +576,7 @@ def simulate_method(
 ) -> PlanMetrics:
     static = dataset.static_obstacles.get(scenario.scenario_id, [])
     dynamic_by_time = dataset.dynamic_obstacles.get(scenario.scenario_id, {})
-    graph = AdaptiveGridGraph(resolution, static, seed + scenario.scenario_id, dataset.terrain_cost.get(scenario.scenario_id, []))
+    graph = AdaptiveGridGraph(resolution, static, seed + scenario_number(scenario.scenario_id), dataset.terrain_cost.get(scenario.scenario_id, []))
     tasks = dataset.tasks[scenario.scenario_id][:max_agents]
     initial_dynamic = dynamic_by_time.get(0, [])
     profiles = dataset.agents.get(scenario.scenario_id, {})
@@ -735,7 +753,7 @@ def svg_bar_chart(path: Path, title: str, rows: Sequence[PlanMetrics], metric: s
     path.write_text(content, encoding="utf-8")
 
 
-def svg_scenario_map(path: Path, dataset: UAVDataset, scenario_id: int, resolution: int) -> None:
+def svg_scenario_map(path: Path, dataset: UAVDataset, scenario_id: str, resolution: int) -> None:
     scenario = dataset.scenarios[scenario_id]
     graph = AdaptiveGridGraph(resolution, dataset.static_obstacles[scenario_id], seed=3)
     tasks = dataset.tasks[scenario_id][:8]
@@ -805,9 +823,9 @@ def write_summary(path: Path, rows: Sequence[PlanMetrics]) -> None:
 
 def run(args: argparse.Namespace) -> None:
     dataset = UAVDataset(Path(args.dataset))
-    scenario_ids = sorted(dataset.scenarios)
+    scenario_ids = sorted(dataset.scenarios, key=scenario_sort_key)
     if args.scenarios:
-        wanted = {int(s) for s in args.scenarios.split(",")}
+        wanted = {scenario_key(s) for s in args.scenarios.split(",")}
         scenario_ids = [sid for sid in scenario_ids if sid in wanted]
     methods = ["static_graph", "central_feedback_static_topology", "adaptive_feedback_hgrl"]
     rows: List[PlanMetrics] = []

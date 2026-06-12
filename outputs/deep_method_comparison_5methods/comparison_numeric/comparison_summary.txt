@@ -1,13 +1,13 @@
 Numeric Comparison of Existing Methods vs Proposed Method
 ========================================================
 
-paper1_deep_hgrl_ugv_assisted: objective_mean=126.7674, completed_mean=5.5000, energy_used_mean=7.0517, min_battery_mean=0.0000
-paper2_deep_cfr_marl: objective_mean=927.1795, completed_mean=5.5000, energy_used_mean=7.0518, min_battery_mean=0.0000
-paper3_deep_energy_uav_ugv_drl: objective_mean=307.0818, completed_mean=8.0000, energy_used_mean=5.8099, min_battery_mean=0.2056
-paper4_deep_tanet_td3_multi_uav: objective_mean=927.1036, completed_mean=5.5000, energy_used_mean=7.0513, min_battery_mean=0.0000
-proposed_adaptive_hgrl: objective_mean=114.9820, completed_mean=8.0000, energy_used_mean=5.5612, min_battery_mean=0.2069
+paper1_deep_hgrl_ugv_assisted: objective_mean=80.1398, completed_mean=7.9900, energy_used_mean=5.8191, min_battery_mean=0.2034
+paper2_deep_cfr_marl: objective_mean=83.3864, completed_mean=7.9900, energy_used_mean=5.8145, min_battery_mean=0.2035
+paper3_deep_mw_maddpg_uav_swarm: objective_mean=83.7728, completed_mean=7.9900, energy_used_mean=5.8076, min_battery_mean=0.2049
+paper4_deep_tanet_td3_multi_uav: objective_mean=83.6014, completed_mean=7.9900, energy_used_mean=5.8146, min_battery_mean=0.2036
+proposed_adaptive_hgrl: objective_mean=79.6811, completed_mean=7.9900, energy_used_mean=5.8006, min_battery_mean=0.2049
 
-proposed_improvement_vs_paper1_deep_hgrl_ugv_assisted_percent: 9.2969%
-proposed_improvement_vs_paper2_deep_cfr_marl_percent: 87.5987%
-proposed_improvement_vs_paper3_deep_energy_uav_ugv_drl_percent: 62.5566%
-proposed_improvement_vs_paper4_deep_tanet_td3_multi_uav_percent: 87.5977%
+proposed_improvement_vs_paper1_deep_hgrl_ugv_assisted_percent: 0.5724%
+proposed_improvement_vs_paper2_deep_cfr_marl_percent: 4.4436%
+proposed_improvement_vs_paper3_deep_mw_maddpg_uav_swarm_percent: 4.8843%
+proposed_improvement_vs_paper4_deep_tanet_td3_multi_uav_percent: 4.6893%

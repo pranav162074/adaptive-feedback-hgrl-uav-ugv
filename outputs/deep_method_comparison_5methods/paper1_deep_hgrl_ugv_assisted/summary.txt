@@ -2,23 +2,115 @@ Method: paper1_deep_hgrl_ugv_assisted
 =====================================
 
 method: paper1_deep_hgrl_ugv_assisted
-scenario_count: 8
-objective_mean: 126.767423
-completed_mean: 5.500000
-collision_risk_mean: 0.001963
-makespan_mean: 0.845812
-energy_used_mean: 7.051651
-min_battery_mean: 0.000000
-battery_warnings_total: 64
-recharge_visits_total: 0
+scenario_count: 100
+objective_mean: 80.139800
+completed_mean: 7.990000
+collision_risk_mean: 0.118071
+makespan_mean: 1.811536
+energy_used_mean: 5.819129
+min_battery_mean: 0.203367
+battery_warnings_total: 800
+recharge_visits_total: 567
 graph_updates_total: 0
 
 Per-scenario numeric outputs:
-scenario=0 objective=112.9053 completed=6 makespan=0.7793 energy=6.8399 min_battery=0.0000 risk=0.0000
-scenario=1 objective=113.4121 completed=6 makespan=0.8187 energy=7.0782 min_battery=0.0000 risk=0.0000
-scenario=2 objective=164.0959 completed=4 makespan=0.8187 energy=7.3216 min_battery=0.0000 risk=0.0000
-scenario=3 objective=113.3989 completed=6 makespan=0.8106 energy=6.8428 min_battery=0.0000 risk=0.0000
-scenario=4 objective=114.8057 completed=6 makespan=0.8269 energy=7.0827 min_battery=0.0000 risk=0.0000
-scenario=5 objective=165.3366 completed=4 makespan=0.9192 energy=7.3204 min_battery=0.0000 risk=0.0000
-scenario=6 objective=114.4297 completed=6 makespan=0.8600 energy=6.8454 min_battery=0.0000 risk=0.0000
-scenario=7 objective=115.7552 completed=6 makespan=0.9330 energy=7.0822 min_battery=0.0000 risk=0.0157
+scenario=S1 objective=61.3166 completed=8 makespan=1.7372 energy=5.7328 min_battery=0.2039 risk=0.0536
+scenario=S2 objective=64.5935 completed=8 makespan=1.6489 energy=5.7476 min_battery=0.2229 risk=0.1008
+scenario=S3 objective=69.3782 completed=8 makespan=1.6096 energy=5.9890 min_battery=0.1835 risk=0.1098
+scenario=S4 objective=73.0713 completed=8 makespan=1.7766 energy=5.7362 min_battery=0.2047 risk=0.1915
+scenario=S5 objective=67.0516 completed=8 makespan=1.6997 energy=5.7504 min_battery=0.2225 risk=0.1156
+scenario=S6 objective=76.6286 completed=8 makespan=1.7488 energy=5.9901 min_battery=0.1843 risk=0.1905
+scenario=S7 objective=64.3956 completed=8 makespan=1.7372 energy=5.7374 min_battery=0.2042 risk=0.0739
+scenario=S8 objective=78.7852 completed=8 makespan=2.0641 energy=5.7649 min_battery=0.2219 risk=0.1414
+scenario=S9 objective=69.2455 completed=8 makespan=1.7029 energy=5.9932 min_battery=0.1828 risk=0.0936
+scenario=S10 objective=72.4015 completed=8 makespan=1.8440 energy=5.7344 min_battery=0.2044 risk=0.1789
+scenario=S11 objective=66.3415 completed=8 makespan=1.8115 energy=5.7543 min_battery=0.2218 risk=0.1011
+scenario=S12 objective=82.3947 completed=8 makespan=1.9868 energy=5.9914 min_battery=0.1848 risk=0.2522
+scenario=S13 objective=64.2128 completed=8 makespan=1.7011 energy=5.7274 min_battery=0.2071 risk=0.1002
+scenario=S14 objective=69.1389 completed=8 makespan=1.7964 energy=5.7534 min_battery=0.2217 risk=0.1342
+scenario=S15 objective=69.1594 completed=8 makespan=1.8719 energy=5.9878 min_battery=0.1838 risk=0.0997
+scenario=S16 objective=70.3786 completed=8 makespan=1.6211 energy=5.7283 min_battery=0.2060 risk=0.1812
+scenario=S17 objective=64.1446 completed=8 makespan=1.5979 energy=5.7440 min_battery=0.2230 risk=0.1008
+scenario=S18 objective=75.1949 completed=8 makespan=1.8045 energy=5.9870 min_battery=0.1829 risk=0.1747
+scenario=S19 objective=65.6372 completed=8 makespan=1.7964 energy=5.7347 min_battery=0.2064 risk=0.0933
+scenario=S20 objective=74.9287 completed=8 makespan=1.8440 energy=5.7525 min_battery=0.2221 risk=0.1720
+scenario=S21 objective=67.8830 completed=8 makespan=1.7308 energy=5.9917 min_battery=0.1825 risk=0.0761
+scenario=S22 objective=70.7018 completed=8 makespan=1.9590 energy=5.7390 min_battery=0.2052 risk=0.1487
+scenario=S23 objective=67.9831 completed=8 makespan=1.8758 energy=5.7452 min_battery=0.2206 risk=0.1197
+scenario=S24 objective=80.6082 completed=8 makespan=1.9868 energy=5.9874 min_battery=0.1821 risk=0.2313
+scenario=S25 objective=64.2101 completed=8 makespan=1.8312 energy=5.7354 min_battery=0.2060 risk=0.0767
+scenario=S26 objective=68.4788 completed=8 makespan=1.6158 energy=5.7459 min_battery=0.2218 risk=0.1400
+scenario=S27 objective=64.6797 completed=8 makespan=1.8260 energy=5.9915 min_battery=0.1830 risk=0.0251
+scenario=S28 objective=69.9724 completed=8 makespan=1.8440 energy=5.7239 min_battery=0.2052 risk=0.1682
+scenario=S29 objective=66.0279 completed=8 makespan=1.7279 energy=5.7401 min_battery=0.2207 risk=0.1163
+scenario=S30 objective=80.7782 completed=8 makespan=1.8161 energy=5.9891 min_battery=0.1812 risk=0.2423
+scenario=S31 objective=67.0699 completed=8 makespan=1.8232 energy=5.7494 min_battery=0.2026 risk=0.0894
+scenario=S32 objective=68.7903 completed=8 makespan=1.5677 energy=5.7414 min_battery=0.2226 risk=0.1490
+scenario=S33 objective=65.8739 completed=8 makespan=1.8440 energy=5.9842 min_battery=0.1826 risk=0.0608
+scenario=S34 objective=68.6758 completed=8 makespan=1.8457 energy=5.7293 min_battery=0.2083 risk=0.1414
+scenario=S35 objective=68.3276 completed=8 makespan=1.9311 energy=5.7546 min_battery=0.2194 risk=0.1092
+scenario=S36 objective=1120.7458 completed=7 makespan=1.7011 energy=5.9754 min_battery=0.1828 risk=0.1406
+scenario=S37 objective=64.9516 completed=8 makespan=1.7639 energy=5.7371 min_battery=0.2060 risk=0.0864
+scenario=S38 objective=67.4897 completed=8 makespan=1.7360 energy=5.7459 min_battery=0.2229 risk=0.1249
+scenario=S39 objective=64.7179 completed=8 makespan=1.8591 energy=5.9910 min_battery=0.1829 risk=0.0298
+scenario=S40 objective=60.3363 completed=8 makespan=1.7308 energy=5.7257 min_battery=0.2091 risk=0.0412
+scenario=S41 objective=63.3366 completed=8 makespan=1.7685 energy=5.7413 min_battery=0.2207 risk=0.0833
+scenario=S42 objective=72.4823 completed=8 makespan=1.8591 energy=5.9898 min_battery=0.1825 risk=0.1361
+scenario=S43 objective=64.8437 completed=8 makespan=1.8178 energy=5.7256 min_battery=0.2068 risk=0.0975
+scenario=S44 objective=78.0657 completed=8 makespan=1.8621 energy=5.7559 min_battery=0.2216 risk=0.2314
+scenario=S45 objective=64.1426 completed=8 makespan=1.9311 energy=5.9816 min_battery=0.1833 risk=0.0431
+scenario=S46 objective=64.2646 completed=8 makespan=1.7981 energy=5.7310 min_battery=0.2060 risk=0.0861
+scenario=S47 objective=65.0242 completed=8 makespan=1.7361 energy=5.7367 min_battery=0.2209 risk=0.0972
+scenario=S48 objective=77.0922 completed=8 makespan=1.8178 energy=5.9865 min_battery=0.1829 risk=0.1931
+scenario=S49 objective=64.7999 completed=8 makespan=1.7029 energy=5.7219 min_battery=0.2072 risk=0.1160
+scenario=S50 objective=72.3469 completed=8 makespan=1.7621 energy=5.7460 min_battery=0.2228 risk=0.1804
+scenario=S51 objective=63.3959 completed=8 makespan=1.5782 energy=5.9733 min_battery=0.1823 risk=0.0638
+scenario=S52 objective=59.2138 completed=8 makespan=1.9149 energy=5.7277 min_battery=0.2083 risk=0.0249
+scenario=S53 objective=62.9497 completed=8 makespan=1.6471 energy=5.7442 min_battery=0.2213 risk=0.0811
+scenario=S54 objective=75.9116 completed=8 makespan=1.8591 energy=5.9877 min_battery=0.1823 risk=0.1739
+scenario=S55 objective=63.4740 completed=8 makespan=1.7029 energy=5.7297 min_battery=0.2076 risk=0.0826
+scenario=S56 objective=75.8546 completed=8 makespan=1.8555 energy=5.7563 min_battery=0.2209 risk=0.1859
+scenario=S57 objective=71.6106 completed=8 makespan=1.8905 energy=5.9933 min_battery=0.1793 risk=0.1050
+scenario=S58 objective=63.5829 completed=8 makespan=1.8870 energy=5.5409 min_battery=0.2083 risk=0.0647
+scenario=S59 objective=67.4076 completed=8 makespan=1.9150 energy=5.7539 min_battery=0.2211 risk=0.0896
+scenario=S60 objective=76.1065 completed=8 makespan=1.9868 energy=5.9867 min_battery=0.1829 risk=0.1797
+scenario=S61 objective=64.5575 completed=8 makespan=1.7964 energy=5.7299 min_battery=0.2076 risk=0.0917
+scenario=S62 objective=76.2086 completed=8 makespan=1.7449 energy=5.7538 min_battery=0.2215 risk=0.2137
+scenario=S63 objective=69.0148 completed=8 makespan=1.8457 energy=5.9814 min_battery=0.1835 risk=0.1027
+scenario=S64 objective=65.5343 completed=8 makespan=1.9868 energy=5.7330 min_battery=0.2083 risk=0.0898
+scenario=S65 objective=60.7911 completed=8 makespan=1.5585 energy=5.7344 min_battery=0.2200 risk=0.0728
+scenario=S66 objective=74.2333 completed=8 makespan=1.7505 energy=5.9854 min_battery=0.1830 risk=0.1636
+scenario=S67 objective=65.2286 completed=8 makespan=1.6553 energy=5.7219 min_battery=0.2060 risk=0.1226
+scenario=S68 objective=81.4019 completed=8 makespan=2.0542 energy=5.7644 min_battery=0.2189 risk=0.2233
+scenario=S69 objective=72.4538 completed=8 makespan=1.9868 energy=5.9970 min_battery=0.1801 risk=0.1004
+scenario=S70 objective=63.6981 completed=8 makespan=1.9184 energy=5.7299 min_battery=0.2043 risk=0.0691
+scenario=S71 objective=60.4329 completed=8 makespan=1.8312 energy=5.7495 min_battery=0.2212 risk=0.0124
+scenario=S72 objective=170.3613 completed=8 makespan=1.6374 energy=5.9724 min_battery=0.1841 risk=0.1176
+scenario=S73 objective=64.4874 completed=8 makespan=1.5585 energy=5.7203 min_battery=0.2085 risk=0.1192
+scenario=S74 objective=68.8003 completed=8 makespan=1.7505 energy=5.7476 min_battery=0.2222 risk=0.0956
+scenario=S75 objective=71.6147 completed=8 makespan=1.9590 energy=5.9932 min_battery=0.1820 risk=0.1091
+scenario=S76 objective=73.6147 completed=8 makespan=1.9868 energy=5.7411 min_battery=0.2048 risk=0.1748
+scenario=S77 objective=60.2528 completed=8 makespan=1.9311 energy=5.7515 min_battery=0.2213 risk=0.0134
+scenario=S78 objective=70.3791 completed=8 makespan=1.9590 energy=5.9902 min_battery=0.1826 risk=0.0957
+scenario=S79 objective=67.8008 completed=8 makespan=1.8063 energy=5.7340 min_battery=0.2028 risk=0.1198
+scenario=S80 objective=78.4423 completed=8 makespan=1.8045 energy=5.7459 min_battery=0.2210 risk=0.2498
+scenario=S81 objective=70.0242 completed=8 makespan=1.9590 energy=5.9927 min_battery=0.1796 risk=0.0939
+scenario=S82 objective=65.7257 completed=8 makespan=1.9868 energy=5.7294 min_battery=0.2087 risk=0.0957
+scenario=S83 objective=61.0497 completed=8 makespan=1.8178 energy=5.7518 min_battery=0.2201 risk=0.0273
+scenario=S84 objective=68.2275 completed=8 makespan=1.9868 energy=5.9795 min_battery=0.1825 risk=0.0907
+scenario=S85 objective=64.2286 completed=8 makespan=1.9311 energy=5.7192 min_battery=0.2085 risk=0.1094
+scenario=S86 objective=69.6565 completed=8 makespan=1.7947 energy=5.7468 min_battery=0.2220 risk=0.1309
+scenario=S87 objective=70.1417 completed=8 makespan=1.9671 energy=5.9940 min_battery=0.1826 risk=0.0874
+scenario=S88 objective=61.8549 completed=8 makespan=1.9868 energy=5.7135 min_battery=0.2083 risk=0.0801
+scenario=S89 objective=61.0305 completed=8 makespan=1.8555 energy=5.7523 min_battery=0.2205 risk=0.0326
+scenario=S90 objective=69.3680 completed=8 makespan=1.9590 energy=5.9953 min_battery=0.1830 risk=0.0763
+scenario=S91 objective=60.7495 completed=8 makespan=1.8870 energy=5.7132 min_battery=0.2083 risk=0.0762
+scenario=S92 objective=76.4037 completed=8 makespan=1.5893 energy=5.7459 min_battery=0.2221 risk=0.2184
+scenario=S93 objective=71.3049 completed=8 makespan=1.8178 energy=5.9803 min_battery=0.1809 risk=0.1335
+scenario=S94 objective=67.7255 completed=8 makespan=1.6076 energy=5.7195 min_battery=0.2053 risk=0.1584
+scenario=S95 objective=64.6202 completed=8 makespan=1.7341 energy=5.7487 min_battery=0.2193 risk=0.0663
+scenario=S96 objective=65.5941 completed=8 makespan=1.8457 energy=5.9808 min_battery=0.1824 risk=0.0628
+scenario=S97 objective=63.9277 completed=8 makespan=1.8905 energy=5.7277 min_battery=0.2027 risk=0.0882
+scenario=S98 objective=75.6381 completed=8 makespan=1.7900 energy=5.7492 min_battery=0.2218 risk=0.2170
+scenario=S99 objective=71.0647 completed=8 makespan=1.8178 energy=5.9885 min_battery=0.1811 risk=0.1129
+scenario=S100 objective=73.7295 completed=8 makespan=1.6977 energy=5.7375 min_battery=0.2026 risk=0.2008

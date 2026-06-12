@@ -10,7 +10,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
-from adaptive_hgrl import AdaptiveGridGraph, MissionBatteryState, Point, Scenario, UAVDataset, path_length, risk_along_path, terrain_factor
+from adaptive_hgrl import (
+    AdaptiveGridGraph,
+    MissionBatteryState,
+    Point,
+    Scenario,
+    UAVDataset,
+    path_length,
+    risk_along_path,
+    scenario_key,
+    scenario_number,
+    scenario_sort_key,
+    terrain_factor,
+)
 
 
 Node = Tuple[int, int]
@@ -31,7 +43,7 @@ ACTIONS: List[Action] = [
 
 @dataclass
 class RLRunMetrics:
-    scenario_id: int
+    scenario_id: str
     method: str
     reward_mean: float
     total_cost: float
@@ -240,7 +252,7 @@ def train_and_evaluate(dataset: UAVDataset, scenario: Scenario, resolution: int,
     graph = AdaptiveGridGraph(
         resolution,
         dataset.static_obstacles.get(scenario.scenario_id, []),
-        seed=seed + scenario.scenario_id,
+        seed=seed + scenario_number(scenario.scenario_id),
         terrain_cost=dataset.terrain_cost.get(scenario.scenario_id, []),
     )
     dynamic_by_time = dataset.dynamic_obstacles.get(scenario.scenario_id, {})
@@ -251,7 +263,7 @@ def train_and_evaluate(dataset: UAVDataset, scenario: Scenario, resolution: int,
         dynamic_by_time,
         dataset.feedback_events.get(scenario.scenario_id, {}),
         dataset.communication_events.get(scenario.scenario_id, {}),
-        seed=seed + scenario.scenario_id,
+        seed=seed + scenario_number(scenario.scenario_id),
     )
     tasks = dataset.tasks[scenario.scenario_id][:max_agents]
     train_battery_state = MissionBatteryState.from_profiles(dataset.agents.get(scenario.scenario_id, {}))
@@ -324,9 +336,9 @@ def write_results(out: Path, rows: Sequence[RLRunMetrics]) -> None:
 
 def run(args: argparse.Namespace) -> None:
     dataset = UAVDataset(Path(args.dataset))
-    scenario_ids = sorted(dataset.scenarios)
+    scenario_ids = sorted(dataset.scenarios, key=scenario_sort_key)
     if args.scenarios:
-        wanted = {int(s) for s in args.scenarios.split(",")}
+        wanted = {scenario_key(s) for s in args.scenarios.split(",")}
         scenario_ids = [sid for sid in scenario_ids if sid in wanted]
     rows = [
         train_and_evaluate(dataset, dataset.scenarios[sid], args.resolution, args.episodes, args.max_agents, args.seed)

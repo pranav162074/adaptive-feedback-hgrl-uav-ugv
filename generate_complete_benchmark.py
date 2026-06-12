@@ -46,12 +46,13 @@ def generate(args: argparse.Namespace) -> None:
     uav_positions = []
 
     for sid in range(args.scenarios):
+        scenario_id = f"S{sid + 1}"
         density = [0.12, 0.22, 0.34, 0.46][sid % 4]
         dynamic = "dynamic" if sid % 2 else "static"
         clustered = "clustered" if sid % 3 != 1 else "dispersed"
         scenarios.append(
             {
-                "scenario_id": sid,
+                "scenario_id": scenario_id,
                 "density": density,
                 "clustered": clustered,
                 "dynamic": dynamic,
@@ -71,7 +72,7 @@ def generate(args: argparse.Namespace) -> None:
             support_points.append((x, y))
             agents.append(
                 {
-                    "scenario_id": sid,
+                    "scenario_id": scenario_id,
                     "agent_id": f"UGV_{gid}",
                     "type": "UGV",
                     "start_x": x,
@@ -96,7 +97,7 @@ def generate(args: argparse.Namespace) -> None:
                 battery_start -= 12
             agents.append(
                 {
-                    "scenario_id": sid,
+                    "scenario_id": scenario_id,
                     "agent_id": f"UAV_{uid}",
                     "type": "UAV",
                     "start_x": sx,
@@ -121,7 +122,7 @@ def generate(args: argparse.Namespace) -> None:
             requires_ugv = "true" if tid % 5 == 0 else "false"
             tasks.append(
                 {
-                    "scenario_id": sid,
+                    "scenario_id": scenario_id,
                     "task_id": f"T_{tid}",
                     "x": tx,
                     "y": ty,
@@ -139,7 +140,7 @@ def generate(args: argparse.Namespace) -> None:
                 sy = 0.86 - 0.10 * (tid // 4)
                 uav_positions.append(
                     {
-                        "scenario_id": sid,
+                        "scenario_id": scenario_id,
                         "uav_id": tid,
                         "start_x": sx,
                         "start_y": sy,
@@ -151,7 +152,7 @@ def generate(args: argparse.Namespace) -> None:
         obstacle_centers = [(0.38, 0.45), (0.55, 0.58), (0.70, 0.25)] if clustered == "clustered" else [(rng.random(), rng.random()) for _ in range(6)]
         static_points = clustered_points(rng, obstacle_centers, int(240 * density), 0.055 if clustered == "clustered" else 0.18)
         for oid, (x, y) in enumerate(static_points):
-            static_obstacles.append({"scenario_id": sid, "obstacle_id": oid, "x": x, "y": y, "radius": 0.018, "severity": 0.75})
+            static_obstacles.append({"scenario_id": scenario_id, "obstacle_id": oid, "x": x, "y": y, "radius": 0.018, "severity": 0.75})
 
         for cell_id in range(args.terrain_cells):
             gx = cell_id % int(math.sqrt(args.terrain_cells))
@@ -159,7 +160,7 @@ def generate(args: argparse.Namespace) -> None:
             x = (gx + 0.5) / int(math.sqrt(args.terrain_cells))
             y = (gy + 0.5) / int(math.sqrt(args.terrain_cells))
             roughness = 1.0 + 0.55 * math.exp(-8 * math.dist((x, y), (0.52, 0.50))) + 0.15 * rng.random()
-            terrain_cost.append({"scenario_id": sid, "cell_id": cell_id, "x": x, "y": y, "terrain_cost": round(roughness, 4)})
+            terrain_cost.append({"scenario_id": scenario_id, "cell_id": cell_id, "x": x, "y": y, "terrain_cost": round(roughness, 4)})
 
         moving_count = 8 if dynamic == "dynamic" else 2
         for oid in range(moving_count):
@@ -170,7 +171,7 @@ def generate(args: argparse.Namespace) -> None:
                 y = clamp(base_y + 0.10 * math.cos(0.07 * t + 0.5 * oid))
                 dynamic_obstacles.append(
                     {
-                        "scenario_id": sid,
+                        "scenario_id": scenario_id,
                         "n_dynamic_obstacles": moving_count,
                         "obstacle_id": oid,
                         "time_step": t,
@@ -185,7 +186,7 @@ def generate(args: argparse.Namespace) -> None:
         for t in [8, 16, 24, 32, 48, 64]:
             communication_events.append(
                 {
-                    "scenario_id": sid,
+                    "scenario_id": scenario_id,
                     "time_step": t,
                     "event_type": "communication_degradation",
                     "x": clamp(0.34 + 0.18 * math.sin((sid + t) / 7)),
@@ -196,7 +197,7 @@ def generate(args: argparse.Namespace) -> None:
             )
             feedback_events.append(
                 {
-                    "scenario_id": sid,
+                    "scenario_id": scenario_id,
                     "time_step": t,
                     "event_type": "risk_zone",
                     "target_id": "",
@@ -211,7 +212,7 @@ def generate(args: argparse.Namespace) -> None:
             for t in [16, 24, 32]:
                 battery_events.append(
                     {
-                        "scenario_id": sid,
+                        "scenario_id": scenario_id,
                         "time_step": t,
                         "agent_id": f"UAV_{uid}",
                         "event_type": "battery_warning",
@@ -246,7 +247,7 @@ task priorities, and UAV/UGV support requirements.
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate complete UAV/UGV adaptive graph benchmark dataset")
     parser.add_argument("--out", default="data_raw/complete_adaptive_benchmark")
-    parser.add_argument("--scenarios", type=int, default=8)
+    parser.add_argument("--scenarios", type=int, default=100)
     parser.add_argument("--uavs", type=int, default=8)
     parser.add_argument("--tasks", type=int, default=12)
     parser.add_argument("--horizon", type=int, default=80)
