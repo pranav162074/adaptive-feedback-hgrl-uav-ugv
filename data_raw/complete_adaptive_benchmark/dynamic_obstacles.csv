@@ -1,4 +1,4 @@
-scenario_id,n_dynamic_obstacles,obstacle_id,time_step,x,y,theta,radius,severity
+episode_id,n_dynamic_obstacles,obstacle_id,time_step,x,y,theta,radius,severity
 S1,2,0,0,0.22,0.28,1.5708,0.032,0.65
 S1,2,0,1,0.23078542590376133,0.27975510002532794,1.4631,0.032,0.65
 S1,2,0,2,0.2414835488110989,0.2790215996212637,1.35715,0.032,0.65

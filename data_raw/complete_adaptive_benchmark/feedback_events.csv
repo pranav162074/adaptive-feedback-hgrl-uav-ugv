@@ -1,4 +1,4 @@
-scenario_id,time_step,event_type,target_id,x,y,radius,severity
+episode_id,time_step,event_type,target_id,x,y,radius,severity
 S1,8,risk_zone,,0.6549488222453963,0.5546994073177922,0.18,0.82
 S1,16,risk_zone,,0.5623090727944462,0.36200001615143806,0.18,0.82
 S1,24,risk_zone,,0.3437755508445729,0.30736138316002304,0.18,0.82

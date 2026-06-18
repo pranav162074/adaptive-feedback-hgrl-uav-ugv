@@ -14,13 +14,13 @@ from adaptive_hgrl import (
     AdaptiveGridGraph,
     MissionBatteryState,
     Point,
-    Scenario,
+    Episode,
     UAVDataset,
     path_length,
     risk_along_path,
-    scenario_key,
-    scenario_number,
-    scenario_sort_key,
+    episode_key,
+    episode_number,
+    episode_sort_key,
     terrain_factor,
 )
 
@@ -43,7 +43,7 @@ ACTIONS: List[Action] = [
 
 @dataclass
 class RLRunMetrics:
-    scenario_id: str
+    episode_id: str
     method: str
     reward_mean: float
     total_cost: float
@@ -248,41 +248,41 @@ def assign_tasks_by_learned_value(tasks, learner: CentralizedFeedbackGraphRL, ba
     return assigned
 
 
-def train_and_evaluate(dataset: UAVDataset, scenario: Scenario, resolution: int, episodes: int, max_agents: int, seed: int) -> RLRunMetrics:
+def train_and_evaluate(dataset: UAVDataset, episode: Episode, resolution: int, episodes: int, max_agents: int, seed: int) -> RLRunMetrics:
     graph = AdaptiveGridGraph(
         resolution,
-        dataset.static_obstacles.get(scenario.scenario_id, []),
-        seed=seed + scenario_number(scenario.scenario_id),
-        terrain_cost=dataset.terrain_cost.get(scenario.scenario_id, []),
+        dataset.static_obstacles.get(episode.episode_id, []),
+        seed=seed + episode_number(episode.episode_id),
+        terrain_cost=dataset.terrain_cost.get(episode.episode_id, []),
     )
-    dynamic_by_time = dataset.dynamic_obstacles.get(scenario.scenario_id, {})
+    dynamic_by_time = dataset.dynamic_obstacles.get(episode.episode_id, {})
     if not dynamic_by_time:
         dynamic_by_time = {0: []}
     learner = CentralizedFeedbackGraphRL(
         graph,
         dynamic_by_time,
-        dataset.feedback_events.get(scenario.scenario_id, {}),
-        dataset.communication_events.get(scenario.scenario_id, {}),
-        seed=seed + scenario_number(scenario.scenario_id),
+        dataset.feedback_events.get(episode.episode_id, {}),
+        dataset.communication_events.get(episode.episode_id, {}),
+        seed=seed + episode_number(episode.episode_id),
     )
-    tasks = dataset.tasks[scenario.scenario_id][:max_agents]
-    train_battery_state = MissionBatteryState.from_profiles(dataset.agents.get(scenario.scenario_id, {}))
+    tasks = dataset.tasks[episode.episode_id][:max_agents]
+    train_battery_state = MissionBatteryState.from_profiles(dataset.agents.get(episode.episode_id, {}))
 
     rewards: List[float] = []
     for ep in range(episodes):
         task = tasks[ep % len(tasks)]
         step = ep % 80
-        train_battery_state.apply_events(dataset.battery_events.get(scenario.scenario_id, {}).get(step, []), step)
+        train_battery_state.apply_events(dataset.battery_events.get(episode.episode_id, {}).get(step, []), step)
         rewards.append(learner.train_episode(f"UAV_{task.uav_id}", task.start, task.goal, train_battery_state))
 
     lengths: List[float] = []
     risks: List[float] = []
     costs: List[float] = []
     completed = 0
-    eval_battery_state = MissionBatteryState.from_profiles(dataset.agents.get(scenario.scenario_id, {}))
-    for event_step in sorted(dataset.battery_events.get(scenario.scenario_id, {})):
+    eval_battery_state = MissionBatteryState.from_profiles(dataset.agents.get(episode.episode_id, {}))
+    for event_step in sorted(dataset.battery_events.get(episode.episode_id, {})):
         if event_step <= 32:
-            eval_battery_state.apply_events(dataset.battery_events[scenario.scenario_id][event_step], event_step)
+            eval_battery_state.apply_events(dataset.battery_events[episode.episode_id][event_step], event_step)
     assigned = assign_tasks_by_learned_value(tasks, learner, eval_battery_state)
     all_dynamic = [point for points in dynamic_by_time.values() for point in points[:20]]
     for agent_id, start, goal in assigned:
@@ -294,7 +294,7 @@ def train_and_evaluate(dataset: UAVDataset, scenario: Scenario, resolution: int,
         completed += int(done and eval_battery_state.level(agent_id) > 0.05)
 
     return RLRunMetrics(
-        scenario.scenario_id,
+        episode.episode_id,
         "centralized_feedback_graph_rl",
         sum(rewards[-max_agents:]) / max(1, min(max_agents, len(rewards))),
         sum(costs),
@@ -329,20 +329,20 @@ def write_results(out: Path, rows: Sequence[RLRunMetrics]) -> None:
         "min_battery_mean": sum(r.min_battery for r in rows) / len(rows),
         "battery_warnings_total": sum(r.battery_warnings for r in rows),
         "recharge_visits_total": sum(r.recharge_visits for r in rows),
-        "episodes_per_scenario": rows[0].episodes,
+        "episodes_per_episode": rows[0].episodes,
     }
     (out / "rl_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
 def run(args: argparse.Namespace) -> None:
     dataset = UAVDataset(Path(args.dataset))
-    scenario_ids = sorted(dataset.scenarios, key=scenario_sort_key)
-    if args.scenarios:
-        wanted = {scenario_key(s) for s in args.scenarios.split(",")}
-        scenario_ids = [sid for sid in scenario_ids if sid in wanted]
+    episode_ids = sorted(dataset.episodes, key=episode_sort_key)
+    if args.episode_filter:
+        wanted = {episode_key(s) for s in args.episode_filter.split(",")}
+        episode_ids = [sid for sid in episode_ids if sid in wanted]
     rows = [
-        train_and_evaluate(dataset, dataset.scenarios[sid], args.resolution, args.episodes, args.max_agents, args.seed)
-        for sid in scenario_ids
+        train_and_evaluate(dataset, dataset.episodes[sid], args.resolution, args.training_episodes, args.max_agents, args.seed)
+        for sid in episode_ids
     ]
     out = Path(args.out)
     write_results(out, rows)
@@ -351,13 +351,13 @@ def run(args: argparse.Namespace) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Centralized feedback-driven graph reinforcement learning trainer")
-    parser.add_argument("--dataset", default="data_raw/uav_dataset/uav_dataset")
+    parser.add_argument("--dataset", default="data_raw/complete_adaptive_benchmark")
     parser.add_argument("--out", default="outputs/centralized_graph_rl")
     parser.add_argument("--resolution", type=int, default=18)
-    parser.add_argument("--episodes", type=int, default=250)
+    parser.add_argument("--training-episodes", type=int, default=40000)
     parser.add_argument("--max-agents", type=int, default=8)
     parser.add_argument("--seed", type=int, default=23)
-    parser.add_argument("--scenarios", default="")
+    parser.add_argument("--episode-filter", default="")
     return parser.parse_args()
 
 

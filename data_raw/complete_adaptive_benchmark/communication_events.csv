@@ -1,4 +1,4 @@
-scenario_id,time_step,event_type,x,y,radius,severity
+episode_id,time_step,event_type,x,y,radius,severity
 S1,8,communication_degradation,0.5037681243294023,0.6156423228215396,0.16,0.55
 S1,16,communication_degradation,0.4759264647216985,0.4817394428834001,0.16,0.55
 S1,24,communication_degradation,0.28904994626519404,0.40140105047593766,0.16,0.55

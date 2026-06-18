@@ -1,4 +1,4 @@
-scenario_id,density,clustered,dynamic,map_width,map_height,mission_horizon,description
+episode_id,density,clustered,dynamic,map_width,map_height,mission_horizon,description
 S1,0.12,clustered,static,1.0,1.0,80,clustered_static_battery_comm_terrain_case_0
 S2,0.22,dispersed,dynamic,1.0,1.0,80,dispersed_dynamic_battery_comm_terrain_case_1
 S3,0.34,clustered,static,1.0,1.0,80,clustered_static_battery_comm_terrain_case_2

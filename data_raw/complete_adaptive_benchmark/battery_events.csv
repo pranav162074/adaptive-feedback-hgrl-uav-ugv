@@ -1,4 +1,4 @@
-scenario_id,time_step,agent_id,event_type,battery_delta,severity
+episode_id,time_step,agent_id,event_type,battery_delta,severity
 S1,16,UAV_0,battery_warning,-10,0.75
 S1,24,UAV_0,battery_warning,-10,0.75
 S1,32,UAV_0,battery_warning,-10,0.75

@@ -19,27 +19,27 @@ Node = Tuple[int, int]
 Edge = Tuple[Node, Node]
 
 
-def scenario_key(value) -> str:
+def episode_key(value) -> str:
     text = str(value).strip()
     if text.upper().startswith("S"):
         return "S" + str(int(text[1:]))
     return "S" + str(int(text) + 1)
 
 
-def scenario_number(value) -> int:
+def episode_number(value) -> int:
     text = str(value).strip()
     if text.upper().startswith("S"):
         return int(text[1:])
     return int(text) + 1
 
 
-def scenario_sort_key(value) -> int:
-    return scenario_number(value)
+def episode_sort_key(value) -> int:
+    return episode_number(value)
 
 
 @dataclass(frozen=True)
-class Scenario:
-    scenario_id: str
+class Episode:
+    episode_id: str
     density: float
     clustered: str
     dynamic: str
@@ -75,7 +75,7 @@ class AgentProfile:
 
 @dataclass
 class PlanMetrics:
-    scenario_id: str
+    episode_id: str
     method: str
     total_cost: float
     makespan: float
@@ -107,7 +107,7 @@ class PlanMetrics:
 class UAVDataset:
     def __init__(self, root: Path):
         self.root = root
-        self.scenarios = self._load_scenarios()
+        self.episodes = self._load_episodes()
         self.tasks = self._load_tasks()
         self.static_obstacles = self._load_static_obstacles()
         self.dynamic_obstacles = self._load_dynamic_obstacles()
@@ -117,12 +117,12 @@ class UAVDataset:
         self.feedback_events = self._load_spatial_events("feedback_events.csv")
         self.battery_events = self._load_battery_events()
 
-    def _load_scenarios(self) -> Dict[str, Scenario]:
-        rows: Dict[str, Scenario] = {}
-        with (self.root / "scenarios.csv").open(newline="") as f:
+    def _load_episodes(self) -> Dict[str, Episode]:
+        rows: Dict[str, Episode] = {}
+        with (self.root / "episodes.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = scenario_key(row["scenario_id"])
-                rows[sid] = Scenario(sid, float(row["density"]), row["clustered"], row["dynamic"])
+                sid = episode_key(row["episode_id"])
+                rows[sid] = Episode(sid, float(row["density"]), row["clustered"], row["dynamic"])
         return rows
 
     def _load_tasks(self) -> Dict[str, List[AgentTask]]:
@@ -134,12 +134,12 @@ class UAVDataset:
             with agents_file.open(newline="") as f:
                 for row in csv.DictReader(f):
                     if row["type"].upper() == "UAV":
-                        sid = scenario_key(row["scenario_id"])
+                        sid = episode_key(row["episode_id"])
                         uid = int(row["agent_id"].split("_")[-1])
                         starts[sid].append((uid, (float(row["start_x"]), float(row["start_y"]))))
             with rich_tasks.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = scenario_key(row["scenario_id"])
+                    sid = episode_key(row["episode_id"])
                     if row.get("requires_uav", "true").lower() != "true":
                         continue
                     available = sorted(starts.get(sid, []))
@@ -162,7 +162,7 @@ class UAVDataset:
             return tasks
         with (self.root / "uav_positions.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = scenario_key(row["scenario_id"])
+                sid = episode_key(row["episode_id"])
                 tasks[sid].append(
                     AgentTask(
                         int(row["uav_id"]),
@@ -176,14 +176,14 @@ class UAVDataset:
         obs: Dict[str, List[Point]] = defaultdict(list)
         with (self.root / "static_obstacles.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                obs[scenario_key(row["scenario_id"])].append((float(row["x"]), float(row["y"])))
+                obs[episode_key(row["episode_id"])].append((float(row["x"]), float(row["y"])))
         return obs
 
     def _load_dynamic_obstacles(self) -> Dict[str, Dict[int, List[Point]]]:
         obs: Dict[str, Dict[int, List[Point]]] = defaultdict(lambda: defaultdict(list))
         with (self.root / "dynamic_obstacles.csv").open(newline="") as f:
             for row in csv.DictReader(f):
-                sid = scenario_key(row["scenario_id"])
+                sid = episode_key(row["episode_id"])
                 time_step = int(row["time_step"])
                 obs[sid][time_step].append((float(row["x"]), float(row["y"])))
         return obs
@@ -194,7 +194,7 @@ class UAVDataset:
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = scenario_key(row["scenario_id"])
+                    sid = episode_key(row["episode_id"])
                     profile = AgentProfile(
                         row["agent_id"],
                         row["type"].upper(),
@@ -225,7 +225,7 @@ class UAVDataset:
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    terrain[scenario_key(row["scenario_id"])].append(((float(row["x"]), float(row["y"])), float(row["terrain_cost"])))
+                    terrain[episode_key(row["episode_id"])].append(((float(row["x"]), float(row["y"])), float(row["terrain_cost"])))
         return terrain
 
     def _load_spatial_events(self, filename: str) -> Dict[str, Dict[int, List[Tuple[Point, float, float]]]]:
@@ -234,7 +234,7 @@ class UAVDataset:
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    sid = scenario_key(row["scenario_id"])
+                    sid = episode_key(row["episode_id"])
                     time_step = int(row["time_step"])
                     x = row.get("x", "")
                     y = row.get("y", "")
@@ -248,7 +248,7 @@ class UAVDataset:
         if path.exists():
             with path.open(newline="") as f:
                 for row in csv.DictReader(f):
-                    events[scenario_key(row["scenario_id"])][int(row["time_step"])].append((row["agent_id"], float(row["battery_delta"]), float(row.get("severity", 0.5))))
+                    events[episode_key(row["episode_id"])][int(row["time_step"])].append((row["agent_id"], float(row["battery_delta"]), float(row.get("severity", 0.5))))
         return events
 
 
@@ -568,22 +568,22 @@ def assign_tasks_hierarchical(
 
 def simulate_method(
     dataset: UAVDataset,
-    scenario: Scenario,
+    episode: Episode,
     method: str,
     resolution: int,
     seed: int,
     max_agents: int,
 ) -> PlanMetrics:
-    static = dataset.static_obstacles.get(scenario.scenario_id, [])
-    dynamic_by_time = dataset.dynamic_obstacles.get(scenario.scenario_id, {})
-    graph = AdaptiveGridGraph(resolution, static, seed + scenario_number(scenario.scenario_id), dataset.terrain_cost.get(scenario.scenario_id, []))
-    tasks = dataset.tasks[scenario.scenario_id][:max_agents]
+    static = dataset.static_obstacles.get(episode.episode_id, [])
+    dynamic_by_time = dataset.dynamic_obstacles.get(episode.episode_id, {})
+    graph = AdaptiveGridGraph(resolution, static, seed + episode_number(episode.episode_id), dataset.terrain_cost.get(episode.episode_id, []))
+    tasks = dataset.tasks[episode.episode_id][:max_agents]
     initial_dynamic = dynamic_by_time.get(0, [])
-    profiles = dataset.agents.get(scenario.scenario_id, {})
+    profiles = dataset.agents.get(episode.episode_id, {})
     battery_state = MissionBatteryState.from_profiles(profiles)
-    for event_step in sorted(dataset.battery_events.get(scenario.scenario_id, {})):
+    for event_step in sorted(dataset.battery_events.get(episode.episode_id, {})):
         if event_step <= 32:
-            battery_state.apply_events(dataset.battery_events[scenario.scenario_id][event_step], event_step)
+            battery_state.apply_events(dataset.battery_events[episode.episode_id][event_step], event_step)
 
     if method == "static_graph":
         assigned = tasks
@@ -615,11 +615,11 @@ def simulate_method(
         full_path: List[Point] = [current]
         accumulated_cost = 0.0
         for step in replanning_steps:
-            battery_state.apply_events(dataset.battery_events.get(scenario.scenario_id, {}).get(step, []), step)
+            battery_state.apply_events(dataset.battery_events.get(episode.episode_id, {}).get(step, []), step)
             battery = battery_state.level(agent_id)
             dynamic = dynamic_by_time.get(step, [])
-            feedback_events = dataset.feedback_events.get(scenario.scenario_id, {}).get(step, [])
-            communication_events = dataset.communication_events.get(scenario.scenario_id, {}).get(step, [])
+            feedback_events = dataset.feedback_events.get(episode.episode_id, {}).get(step, [])
+            communication_events = dataset.communication_events.get(episode.episode_id, {}).get(step, [])
             route_goal = task.goal
             if method == "adaptive_feedback_hgrl" and battery < 0.24:
                 charger = battery_state.nearest_charger(current)
@@ -650,8 +650,8 @@ def simulate_method(
         if current != task.goal:
             dynamic = dynamic_by_time.get(max(replanning_steps), [])
             step = max(replanning_steps)
-            feedback_events = dataset.feedback_events.get(scenario.scenario_id, {}).get(step, [])
-            communication_events = dataset.communication_events.get(scenario.scenario_id, {}).get(step, [])
+            feedback_events = dataset.feedback_events.get(episode.episode_id, {}).get(step, [])
+            communication_events = dataset.communication_events.get(episode.episode_id, {}).get(step, [])
             tail, cost = graph.astar(current, task.goal, dynamic, mode, battery_state.level(agent_id), agent_type, feedback_events, communication_events)
             accumulated_cost += cost
             full_path.extend(tail[1:])
@@ -669,7 +669,7 @@ def simulate_method(
 
     makespan = max(lengths) if lengths else 0.0
     return PlanMetrics(
-        scenario.scenario_id,
+        episode.episode_id,
         method,
         sum(path_costs),
         makespan,
@@ -689,7 +689,7 @@ def simulate_method(
 def write_csv(path: Path, rows: Sequence[PlanMetrics]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = [
-        "scenario_id",
+        "episode_id",
         "method",
         "total_cost",
         "makespan",
@@ -753,11 +753,11 @@ def svg_bar_chart(path: Path, title: str, rows: Sequence[PlanMetrics], metric: s
     path.write_text(content, encoding="utf-8")
 
 
-def svg_scenario_map(path: Path, dataset: UAVDataset, scenario_id: str, resolution: int) -> None:
-    scenario = dataset.scenarios[scenario_id]
-    graph = AdaptiveGridGraph(resolution, dataset.static_obstacles[scenario_id], seed=3)
-    tasks = dataset.tasks[scenario_id][:8]
-    dynamic = dataset.dynamic_obstacles.get(scenario_id, {}).get(8, [])
+def svg_episode_map(path: Path, dataset: UAVDataset, episode_id: str, resolution: int) -> None:
+    episode = dataset.episodes[episode_id]
+    graph = AdaptiveGridGraph(resolution, dataset.static_obstacles[episode_id], seed=3)
+    tasks = dataset.tasks[episode_id][:8]
+    dynamic = dataset.dynamic_obstacles.get(episode_id, {}).get(8, [])
     width = height = 720
 
     def xy(p: Point) -> Tuple[float, float]:
@@ -769,7 +769,7 @@ def svg_scenario_map(path: Path, dataset: UAVDataset, scenario_id: str, resoluti
         pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in map(xy, path_points))
         paths.append(f'<polyline points="{pts}" fill="none" stroke="#138a72" stroke-width="2" opacity="0.8"/>')
     static_circles = []
-    for p in dataset.static_obstacles[scenario_id][:: max(1, len(dataset.static_obstacles[scenario_id]) // 250)]:
+    for p in dataset.static_obstacles[episode_id][:: max(1, len(dataset.static_obstacles[episode_id]) // 250)]:
         x, y = xy(p)
         static_circles.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.4" fill="#6f7782" opacity="0.42"/>')
     dyn_circles = []
@@ -783,7 +783,7 @@ def svg_scenario_map(path: Path, dataset: UAVDataset, scenario_id: str, resoluti
         markers.append(f'<circle cx="{sx:.1f}" cy="{sy:.1f}" r="6" fill="#225ea8"/><rect x="{gx-5:.1f}" y="{gy-5:.1f}" width="10" height="10" fill="#111827"/>')
     content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
 <rect width="100%" height="100%" fill="#f8faf8"/>
-<text x="{width / 2}" y="30" text-anchor="middle" font-family="Arial" font-size="22" fill="#172026">Adaptive Feedback Graph, Scenario {scenario_id} ({scenario.dynamic})</text>
+<text x="{width / 2}" y="30" text-anchor="middle" font-family="Arial" font-size="22" fill="#172026">Adaptive Feedback Graph, Episode {episode_id} ({episode.dynamic})</text>
 <rect x="40" y="40" width="{width - 80}" height="{height - 80}" fill="#ffffff" stroke="#172026"/>
 <g>{''.join(static_circles)}</g>
 <g>{''.join(dyn_circles)}</g>
@@ -823,37 +823,39 @@ def write_summary(path: Path, rows: Sequence[PlanMetrics]) -> None:
 
 def run(args: argparse.Namespace) -> None:
     dataset = UAVDataset(Path(args.dataset))
-    scenario_ids = sorted(dataset.scenarios, key=scenario_sort_key)
-    if args.scenarios:
-        wanted = {scenario_key(s) for s in args.scenarios.split(",")}
-        scenario_ids = [sid for sid in scenario_ids if sid in wanted]
+    episode_ids = sorted(dataset.episodes, key=episode_sort_key)
+    if args.episode_filter:
+        wanted = {episode_key(s) for s in args.episode_filter.split(",")}
+        episode_ids = [sid for sid in episode_ids if sid in wanted]
     methods = ["static_graph", "central_feedback_static_topology", "adaptive_feedback_hgrl"]
     rows: List[PlanMetrics] = []
-    for sid in scenario_ids:
-        scenario = dataset.scenarios[sid]
+    for sid in episode_ids:
+        episode = dataset.episodes[sid]
         for method in methods:
-            rows.append(simulate_method(dataset, scenario, method, args.resolution, args.seed, args.max_agents))
+            rows.append(simulate_method(dataset, episode, method, args.resolution, args.seed, args.max_agents))
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     write_csv(out / "metrics.csv", rows)
     write_summary(out / "summary.json", rows)
-    svg_bar_chart(out / "objective_comparison.svg", "Lower Multi-Objective Score Is Better", rows, "objective")
-    svg_bar_chart(out / "risk_comparison.svg", "Lower Collision Risk Is Better", rows, "collision_risk")
-    svg_bar_chart(out / "battery_comparison.svg", "Higher Minimum Battery Is Better", rows, "min_battery")
-    dynamic_ids = [sid for sid in scenario_ids if dataset.scenarios[sid].dynamic == "dynamic"]
-    svg_scenario_map(out / "adaptive_scenario_map.svg", dataset, dynamic_ids[0] if dynamic_ids else scenario_ids[0], args.resolution)
+    if args.write_visuals:
+        svg_bar_chart(out / "objective_comparison.svg", "Lower Multi-Objective Score Is Better", rows, "objective")
+        svg_bar_chart(out / "risk_comparison.svg", "Lower Collision Risk Is Better", rows, "collision_risk")
+        svg_bar_chart(out / "battery_comparison.svg", "Higher Minimum Battery Is Better", rows, "min_battery")
+        dynamic_ids = [sid for sid in episode_ids if dataset.episodes[sid].dynamic == "dynamic"]
+        svg_episode_map(out / "adaptive_episode_map.svg", dataset, dynamic_ids[0] if dynamic_ids else episode_ids[0], args.resolution)
     print(f"Wrote results to {out.resolve()}")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Adaptive feedback-driven hierarchical graph planner experiment")
-    parser.add_argument("--dataset", default="data_raw/uav_dataset/uav_dataset")
+    parser.add_argument("--dataset", default="data_raw/complete_adaptive_benchmark")
     parser.add_argument("--out", default="outputs/adaptive_hgrl")
     parser.add_argument("--resolution", type=int, default=24)
     parser.add_argument("--seed", type=int, default=13)
     parser.add_argument("--max-agents", type=int, default=8)
-    parser.add_argument("--scenarios", default="")
+    parser.add_argument("--episode-filter", default="")
+    parser.add_argument("--write-visuals", action="store_true")
     return parser.parse_args()
 
 

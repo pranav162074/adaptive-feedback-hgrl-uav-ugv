@@ -7,7 +7,7 @@ import math
 import random
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import torch
 from torch import nn
@@ -19,14 +19,14 @@ from adaptive_hgrl import (
     AgentTask,
     MissionBatteryState,
     PlanMetrics,
-    Scenario,
+    Episode,
     UAVDataset,
     fairness_std,
     path_length,
     risk_along_path,
-    scenario_key,
-    scenario_number,
-    scenario_sort_key,
+    episode_key,
+    episode_number,
+    episode_sort_key,
     simulate_method,
     terrain_factor,
 )
@@ -50,7 +50,7 @@ ACTIONS: List[Action] = [
 
 @dataclass
 class ExistingMethodMetrics:
-    scenario_id: str
+    episode_id: str
     method: str
     total_cost: float
     makespan: float
@@ -230,7 +230,7 @@ class TANetCritic(nn.Module):
 
 
 class GraphActorCritic(nn.Module):
-    """CPU-friendly GNN actor-critic used by all five comparison methods."""
+    """GNN actor-critic used by all five comparison methods."""
 
     def __init__(self, node_dim: int = 14, candidate_dim: int = 10, hidden_dim: int = 64):
         super().__init__()
@@ -300,8 +300,8 @@ def capability_vector(capability: MethodCapability) -> torch.Tensor:
     )
 
 
-def build_heterogeneous_graph(dataset: UAVDataset, scenario_id: str, tasks: Sequence[AgentTask], battery_state: MissionBatteryState):
-    profiles = dataset.agents[scenario_id]
+def build_heterogeneous_graph(dataset: UAVDataset, episode_id: str, tasks: Sequence[AgentTask], battery_state: MissionBatteryState):
+    profiles = dataset.agents[episode_id]
     node_rows = []
     node_ids = []
     for agent_id, profile in profiles.items():
@@ -387,12 +387,12 @@ class HeterogeneousGraphRLEnvironment:
         self.max_agents = max_agents
         self.resolution = resolution
 
-    def reset(self, scenario_id: str):
-        tasks = self.dataset.tasks[scenario_id][: self.max_agents]
-        battery_state = MissionBatteryState.from_profiles(self.dataset.agents[scenario_id])
+    def reset(self, episode_id: str):
+        tasks = self.dataset.tasks[episode_id][: self.max_agents]
+        battery_state = MissionBatteryState.from_profiles(self.dataset.agents[episode_id])
         return {
-            "scenario_id": scenario_id,
-            "scenario": self.dataset.scenarios[scenario_id],
+            "episode_id": episode_id,
+            "episode": self.dataset.episodes[episode_id],
             "tasks": tasks,
             "battery_state": battery_state,
             "remaining": list(range(len(tasks))),
@@ -400,14 +400,14 @@ class HeterogeneousGraphRLEnvironment:
         }
 
     def observation(self, state, agent_task: AgentTask, remaining: Sequence[int], capability: MethodCapability):
-        scenario_id = state["scenario_id"]
+        episode_id = state["episode_id"]
         step = state["step"]
         tasks = state["tasks"]
         battery_state = state["battery_state"]
-        dynamic = dynamic_at(self.dataset.dynamic_obstacles.get(scenario_id, {}), step) if capability.dynamic_obstacle_aware else []
-        feedback = events_at(self.dataset.feedback_events.get(scenario_id, {}), step) if capability.use_feedback else []
-        communication = events_at(self.dataset.communication_events.get(scenario_id, {}), step) if capability.use_feedback else []
-        node_features, adj, node_ids, task_start = build_heterogeneous_graph(self.dataset, scenario_id, tasks, battery_state)
+        dynamic = dynamic_at(self.dataset.dynamic_obstacles.get(episode_id, {}), step) if capability.dynamic_obstacle_aware else []
+        feedback = events_at(self.dataset.feedback_events.get(episode_id, {}), step) if capability.use_feedback else []
+        communication = events_at(self.dataset.communication_events.get(episode_id, {}), step) if capability.use_feedback else []
+        node_features, adj, node_ids, task_start = build_heterogeneous_graph(self.dataset, episode_id, tasks, battery_state)
         agent_id = f"UAV_{agent_task.uav_id}"
         if agent_id not in node_ids:
             return None
@@ -514,8 +514,8 @@ class HeterogeneousGraphRLEnvironment:
             + recharge_value
         )
 
-    def rollout_assignments(self, model: GraphActorCritic, scenario_id: str, capability: MethodCapability):
-        state = self.reset(scenario_id)
+    def rollout_assignments(self, model: GraphActorCritic, episode_id: str, capability: MethodCapability):
+        state = self.reset(episode_id)
         assignments = []
         for agent_order, agent_task in enumerate(state["tasks"]):
             if not state["remaining"]:
@@ -541,65 +541,112 @@ class HeterogeneousGraphRLEnvironment:
 
 def train_graph_actor_critic(
     dataset: UAVDataset,
-    scenario_ids: Sequence[int],
+    episode_ids: Sequence[str],
     max_agents: int,
     capability: MethodCapability,
     seed: int,
-) -> GraphActorCritic:
+    log_interval: int = 200,
+    device: str = "auto",
+) -> Tuple[GraphActorCritic, List[Dict[str, object]]]:
     torch.manual_seed(seed)
     random.seed(seed)
+    if device == "auto":
+        runtime_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        runtime_device = torch.device(device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
-    model = GraphActorCritic()
+    model = GraphActorCritic().to(runtime_device)
     optimizer = torch.optim.Adam(model.parameters(), lr=capability.lr)
-    for epoch in range(capability.epochs):
+    history: List[Dict[str, object]] = []
+
+    for training_episode in range(1, capability.epochs + 1):
         losses = []
-        scenario_order = list(scenario_ids)
-        random.shuffle(scenario_order)
-        for scenario_id in scenario_order:
-            state = env.reset(scenario_id)
-            for agent_order, agent_task in enumerate(state["tasks"]):
-                if not state["remaining"]:
-                    break
-                state["step"] = epoch + agent_order * 3
-                obs = env.observation(state, agent_task, state["remaining"], capability)
-                if obs is None:
-                    continue
-                logits, value = model(
-                    obs["node_features"],
-                    obs["adj"],
-                    obs["agent_index"],
-                    obs["task_indices"],
-                    obs["candidate_features"],
-                    obs["global_features"],
-                )
-                rewards = obs["candidate_rewards"]
-                target_action = int(torch.argmax(rewards).item())
-                advantage = rewards[target_action].detach() - value.detach()
-                policy_loss = F.cross_entropy(logits.unsqueeze(0), torch.tensor([target_action])) * advantage.abs().clamp_min(0.25)
-                value_loss = F.mse_loss(value, rewards.max().detach())
-                entropy = Categorical(logits=logits).entropy()
-                losses.append(policy_loss + 0.45 * value_loss - 0.01 * entropy)
-                state["remaining"].pop(target_action)
+        policy_losses = []
+        value_losses = []
+        entropies = []
+        rewards_seen = []
+        chosen_rewards = []
+        episode_id = random.choice(list(episode_ids))
+        state = env.reset(episode_id)
+        for agent_order, agent_task in enumerate(state["tasks"]):
+            if not state["remaining"]:
+                break
+            state["step"] = training_episode + agent_order * 3
+            obs = env.observation(state, agent_task, state["remaining"], capability)
+            if obs is None:
+                continue
+            node_features = obs["node_features"].to(runtime_device)
+            adj = obs["adj"].to(runtime_device)
+            candidate_features = obs["candidate_features"].to(runtime_device)
+            global_features = obs["global_features"].to(runtime_device)
+            rewards = obs["candidate_rewards"].to(runtime_device)
+            logits, value = model(
+                node_features,
+                adj,
+                obs["agent_index"],
+                obs["task_indices"],
+                candidate_features,
+                global_features,
+            )
+            target_action = int(torch.argmax(rewards).item())
+            advantage = rewards[target_action].detach() - value.detach()
+            policy_loss = F.cross_entropy(
+                logits.unsqueeze(0),
+                torch.tensor([target_action], device=runtime_device),
+            ) * advantage.abs().clamp_min(0.25)
+            value_loss = F.mse_loss(value, rewards.max().detach())
+            entropy = Categorical(logits=logits).entropy()
+            loss_item = policy_loss + 0.45 * value_loss - 0.01 * entropy
+            losses.append(loss_item)
+            policy_losses.append(float(policy_loss.detach().cpu()))
+            value_losses.append(float(value_loss.detach().cpu()))
+            entropies.append(float(entropy.detach().cpu()))
+            rewards_seen.append(float(rewards.mean().detach().cpu()))
+            chosen_rewards.append(float(rewards[target_action].detach().cpu()))
+            state["remaining"].pop(target_action)
         if losses:
             loss = torch.stack(losses).mean()
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-    return model
+        should_log = (
+            training_episode == 1
+            or training_episode == capability.epochs
+            or training_episode % max(1, log_interval) == 0
+        )
+        if should_log:
+            completed_proxy = len(state["tasks"]) - len(state["remaining"])
+            history.append(
+                {
+                    "training_episode": training_episode,
+                    "benchmark_episode_id": episode_id,
+                    "method": capability.name,
+                    "actor_critic_loss": float(torch.stack(losses).mean().detach().cpu()) if losses else 0.0,
+                    "policy_loss": sum(policy_losses) / max(1, len(policy_losses)),
+                    "value_loss": sum(value_losses) / max(1, len(value_losses)),
+                    "entropy": sum(entropies) / max(1, len(entropies)),
+                    "candidate_reward_mean": sum(rewards_seen) / max(1, len(rewards_seen)),
+                    "selected_reward_mean": sum(chosen_rewards) / max(1, len(chosen_rewards)),
+                    "task_completion_proxy": completed_proxy / max(1, max_agents),
+                    "remaining_task_ratio": len(state["remaining"]) / max(1, max_agents),
+                    "device": str(runtime_device),
+                }
+            )
+    return model.cpu(), history
 
 
-def train_hgrl_allocator(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int) -> DeepHGRLAllocator:
+def train_hgrl_allocator(dataset: UAVDataset, episode_ids: Sequence[int], max_agents: int, epochs: int, seed: int) -> DeepHGRLAllocator:
     torch.manual_seed(seed)
     random.seed(seed)
     model = DeepHGRLAllocator()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.003)
     for _ in range(epochs):
         losses = []
-        for scenario_id in scenario_ids:
-            tasks = dataset.tasks[scenario_id][:max_agents]
-            battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
-            node_features, adj, node_ids, task_start = build_heterogeneous_graph(dataset, scenario_id, tasks, battery_state)
+        for episode_id in episode_ids:
+            tasks = dataset.tasks[episode_id][:max_agents]
+            battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
+            node_features, adj, node_ids, task_start = build_heterogeneous_graph(dataset, episode_id, tasks, battery_state)
             remaining = list(range(len(tasks)))
             for task in tasks:
                 agent_id = f"UAV_{task.uav_id}"
@@ -635,10 +682,10 @@ def train_hgrl_allocator(dataset: UAVDataset, scenario_ids: Sequence[int], max_a
     return model
 
 
-def hgrl_assignments(model: DeepHGRLAllocator, dataset: UAVDataset, scenario_id: str, max_agents: int):
-    tasks = dataset.tasks[scenario_id][:max_agents]
-    battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
-    node_features, adj, node_ids, task_start = build_heterogeneous_graph(dataset, scenario_id, tasks, battery_state)
+def hgrl_assignments(model: DeepHGRLAllocator, dataset: UAVDataset, episode_id: str, max_agents: int):
+    tasks = dataset.tasks[episode_id][:max_agents]
+    battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
+    node_features, adj, node_ids, task_start = build_heterogeneous_graph(dataset, episode_id, tasks, battery_state)
     remaining = list(range(len(tasks)))
     assignments = []
     for task in tasks:
@@ -657,7 +704,7 @@ def hgrl_assignments(model: DeepHGRLAllocator, dataset: UAVDataset, scenario_id:
 
 def evaluate_graph_paths(
     dataset: UAVDataset,
-    scenario: Scenario,
+    episode: Episode,
     assignments,
     method: str,
     use_feedback_reward: bool,
@@ -668,15 +715,15 @@ def evaluate_graph_paths(
 ) -> ExistingMethodMetrics:
     graph = AdaptiveGridGraph(
         22,
-        dataset.static_obstacles.get(scenario.scenario_id, []),
-        seed=900 + scenario_number(scenario.scenario_id),
-        terrain_cost=dataset.terrain_cost.get(scenario.scenario_id, []),
+        dataset.static_obstacles.get(episode.episode_id, []),
+        seed=900 + episode_number(episode.episode_id),
+        terrain_cost=dataset.terrain_cost.get(episode.episode_id, []),
     )
-    dynamic_by_time = dataset.dynamic_obstacles.get(scenario.scenario_id, {})
-    battery_state = MissionBatteryState.from_profiles(dataset.agents.get(scenario.scenario_id, {}))
-    for event_step in sorted(dataset.battery_events.get(scenario.scenario_id, {})):
+    dynamic_by_time = dataset.dynamic_obstacles.get(episode.episode_id, {})
+    battery_state = MissionBatteryState.from_profiles(dataset.agents.get(episode.episode_id, {}))
+    for event_step in sorted(dataset.battery_events.get(episode.episode_id, {})):
         if event_step <= 32:
-            battery_state.apply_events(dataset.battery_events[scenario.scenario_id][event_step], event_step)
+            battery_state.apply_events(dataset.battery_events[episode.episode_id][event_step], event_step)
 
     costs, lengths, risks, energy = [], [], [], []
     completed = 0
@@ -697,8 +744,8 @@ def evaluate_graph_paths(
                 if charger:
                     route_goal = charger[1]
             dynamic = dynamic_at(dynamic_by_time, step) if use_feedback_reward else []
-            feedback = events_at(dataset.feedback_events.get(scenario.scenario_id, {}), step) if use_feedback_reward else []
-            communication = events_at(dataset.communication_events.get(scenario.scenario_id, {}), step) if use_feedback_reward else []
+            feedback = events_at(dataset.feedback_events.get(episode.episode_id, {}), step) if use_feedback_reward else []
+            communication = events_at(dataset.communication_events.get(episode.episode_id, {}), step) if use_feedback_reward else []
             path, cost = graph.astar(
                 current,
                 route_goal,
@@ -745,7 +792,7 @@ def evaluate_graph_paths(
         costs = [cost * 1.025 for cost in costs]
 
     return ExistingMethodMetrics(
-        scenario.scenario_id,
+        episode.episode_id,
         method,
         sum(costs),
         max(lengths) if lengths else 0.0,
@@ -783,22 +830,22 @@ def rl_state(graph: AdaptiveGridGraph, node: Node, goal: Node, battery: float, d
     )
 
 
-def train_cfr_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, episodes: int, seed: int) -> DeepCFRPolicy:
+def train_cfr_policy(dataset: UAVDataset, episode_ids: Sequence[int], max_agents: int, episodes: int, seed: int) -> DeepCFRPolicy:
     torch.manual_seed(seed)
     random.seed(seed)
     policy = DeepCFRPolicy()
     optimizer = torch.optim.Adam(policy.parameters(), lr=0.002)
     for episode in range(episodes):
-        scenario_id = scenario_ids[episode % len(scenario_ids)]
-        tasks = dataset.tasks[scenario_id][:max_agents]
+        episode_id = episode_ids[episode % len(episode_ids)]
+        tasks = dataset.tasks[episode_id][:max_agents]
         task = tasks[episode % len(tasks)]
         graph = AdaptiveGridGraph(
             16,
-            dataset.static_obstacles.get(scenario_id, []),
-            seed=seed + scenario_number(scenario_id),
-            terrain_cost=dataset.terrain_cost.get(scenario_id, []),
+            dataset.static_obstacles.get(episode_id, []),
+            seed=seed + episode_number(episode_id),
+            terrain_cost=dataset.terrain_cost.get(episode_id, []),
         )
-        dynamic_by_time = dataset.dynamic_obstacles.get(scenario_id, {})
+        dynamic_by_time = dataset.dynamic_obstacles.get(episode_id, {})
         node = graph.to_node(task.start)
         goal = graph.to_node(task.goal)
         battery = 0.54
@@ -806,8 +853,8 @@ def train_cfr_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_agent
         rewards = []
         for step in range(42):
             dynamic = dynamic_at(dynamic_by_time, step)
-            feedback = events_at(dataset.feedback_events.get(scenario_id, {}), step)
-            communication = events_at(dataset.communication_events.get(scenario_id, {}), step)
+            feedback = events_at(dataset.feedback_events.get(episode_id, {}), step)
+            communication = events_at(dataset.communication_events.get(episode_id, {}), step)
             logits = policy(rl_state(graph, node, goal, battery, dynamic, feedback, communication))
             valid = []
             for action_idx, action in enumerate(ACTIONS):
@@ -854,12 +901,12 @@ def train_cfr_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_agent
     return policy
 
 
-def cfr_assignments(dataset: UAVDataset, scenario_id: str, max_agents: int):
+def cfr_assignments(dataset: UAVDataset, episode_id: str, max_agents: int):
     # CFR-MARL baseline focuses on centralized feedback path policy; assignment is direct/decentralized.
-    return [(f"UAV_{task.uav_id}", task.start, task.goal) for task in dataset.tasks[scenario_id][:max_agents]]
+    return [(f"UAV_{task.uav_id}", task.start, task.goal) for task in dataset.tasks[episode_id][:max_agents]]
 
 
-def mwmaddpg_candidate_features(task: AgentTask, start: Point, battery: float, dynamic: Sequence[Point], scenario: Scenario) -> torch.Tensor:
+def mwmaddpg_candidate_features(task: AgentTask, start: Point, battery: float, dynamic: Sequence[Point], episode: Episode) -> torch.Tensor:
     distance = math.dist(start, task.goal)
     obstacle_risk = point_risk(task.goal, dynamic)
     center_distance = math.dist(task.goal, (0.5, 0.5))
@@ -886,7 +933,7 @@ def mwmaddpg_joint_features(candidate_features: torch.Tensor, remaining_ratio: f
     return torch.cat([candidate_features, context], dim=0)
 
 
-def train_mwmaddpg_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int) -> Tuple[MWMADDPGActor, MWMADDPGCritic]:
+def train_mwmaddpg_policy(dataset: UAVDataset, episode_ids: Sequence[int], max_agents: int, epochs: int, seed: int) -> Tuple[MWMADDPGActor, MWMADDPGCritic]:
     torch.manual_seed(seed)
     random.seed(seed)
     actor = MWMADDPGActor()
@@ -896,11 +943,11 @@ def train_mwmaddpg_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_
     for epoch in range(epochs):
         actor_losses = []
         critic_losses = []
-        for scenario_id in scenario_ids:
-            scenario = dataset.scenarios[scenario_id]
-            tasks = dataset.tasks[scenario_id][:max_agents]
-            battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
-            dynamic = dynamic_at(dataset.dynamic_obstacles.get(scenario_id, {}), epoch)
+        for episode_id in episode_ids:
+            episode = dataset.episodes[episode_id]
+            tasks = dataset.tasks[episode_id][:max_agents]
+            battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
+            dynamic = dynamic_at(dataset.dynamic_obstacles.get(episode_id, {}), epoch)
             mean_battery = sum(battery_state.level(f"UAV_{task.uav_id}") for task in tasks) / max(1, len(tasks))
             remaining = list(range(len(tasks)))
             for agent_order, task in enumerate(tasks):
@@ -915,7 +962,7 @@ def train_mwmaddpg_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_
                     candidate = tasks[idx]
                     distance = math.dist(task.start, candidate.goal)
                     risk = point_risk(candidate.goal, dynamic)
-                    feature = mwmaddpg_candidate_features(candidate, task.start, battery, dynamic, scenario)
+                    feature = mwmaddpg_candidate_features(candidate, task.start, battery, dynamic, episode)
                     remaining_ratio = len(remaining) / max(1, max_agents)
                     joint = mwmaddpg_joint_features(feature, remaining_ratio, mean_battery)
                     # MW-MADDPG baseline learns UAV-swarm decision-making with a centralized critic.
@@ -959,11 +1006,11 @@ def train_mwmaddpg_policy(dataset: UAVDataset, scenario_ids: Sequence[int], max_
     return actor, critic
 
 
-def mwmaddpg_assignments(actor: MWMADDPGActor, critic: MWMADDPGCritic, dataset: UAVDataset, scenario_id: str, max_agents: int):
-    scenario = dataset.scenarios[scenario_id]
-    tasks = dataset.tasks[scenario_id][:max_agents]
-    battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
-    dynamic = dynamic_at(dataset.dynamic_obstacles.get(scenario_id, {}), 0)
+def mwmaddpg_assignments(actor: MWMADDPGActor, critic: MWMADDPGCritic, dataset: UAVDataset, episode_id: str, max_agents: int):
+    episode = dataset.episodes[episode_id]
+    tasks = dataset.tasks[episode_id][:max_agents]
+    battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
+    dynamic = dynamic_at(dataset.dynamic_obstacles.get(episode_id, {}), 0)
     mean_battery = sum(battery_state.level(f"UAV_{task.uav_id}") for task in tasks) / max(1, len(tasks))
     remaining = list(range(len(tasks)))
     assignments = []
@@ -976,7 +1023,7 @@ def mwmaddpg_assignments(actor: MWMADDPGActor, critic: MWMADDPGCritic, dataset: 
         joint_features = []
         for idx in remaining:
             candidate = tasks[idx]
-            feature = mwmaddpg_candidate_features(candidate, task.start, battery, dynamic, scenario)
+            feature = mwmaddpg_candidate_features(candidate, task.start, battery, dynamic, episode)
             features.append(feature)
             joint_features.append(mwmaddpg_joint_features(feature, len(remaining) / max(1, max_agents), mean_battery))
         with torch.no_grad():
@@ -1008,7 +1055,7 @@ def tanet_candidate_features(task: AgentTask, start: Point, battery: float, dyna
     )
 
 
-def train_tanet_td3(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
+def train_tanet_td3(dataset: UAVDataset, episode_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
     torch.manual_seed(seed)
     random.seed(seed)
     actor = TANetActor()
@@ -1019,11 +1066,11 @@ def train_tanet_td3(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents
     for epoch in range(epochs):
         critic_losses = []
         actor_features = []
-        for scenario_id in scenario_ids:
-            graph = AdaptiveGridGraph(18, dataset.static_obstacles.get(scenario_id, []), seed=seed + scenario_number(scenario_id))
-            dynamic = dynamic_at(dataset.dynamic_obstacles.get(scenario_id, {}), epoch)
-            battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
-            for task in dataset.tasks[scenario_id][:max_agents]:
+        for episode_id in episode_ids:
+            graph = AdaptiveGridGraph(18, dataset.static_obstacles.get(episode_id, []), seed=seed + episode_number(episode_id))
+            dynamic = dynamic_at(dataset.dynamic_obstacles.get(episode_id, {}), epoch)
+            battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
+            for task in dataset.tasks[episode_id][:max_agents]:
                 battery = battery_state.level(f"UAV_{task.uav_id}")
                 feature = tanet_candidate_features(task, task.start, battery, dynamic, graph)
                 distance = math.dist(task.start, task.goal)
@@ -1058,11 +1105,11 @@ def train_tanet_td3(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents
     return actor, critic1, critic2
 
 
-def tanet_td3_assignments(actor: TANetActor, critic1: TANetCritic, critic2: TANetCritic, dataset: UAVDataset, scenario_id: str, max_agents: int):
-    tasks = dataset.tasks[scenario_id][:max_agents]
-    graph = AdaptiveGridGraph(18, dataset.static_obstacles.get(scenario_id, []), seed=1000 + scenario_number(scenario_id))
-    dynamic = dynamic_at(dataset.dynamic_obstacles.get(scenario_id, {}), 0)
-    battery_state = MissionBatteryState.from_profiles(dataset.agents[scenario_id])
+def tanet_td3_assignments(actor: TANetActor, critic1: TANetCritic, critic2: TANetCritic, dataset: UAVDataset, episode_id: str, max_agents: int):
+    tasks = dataset.tasks[episode_id][:max_agents]
+    graph = AdaptiveGridGraph(18, dataset.static_obstacles.get(episode_id, []), seed=1000 + episode_number(episode_id))
+    dynamic = dynamic_at(dataset.dynamic_obstacles.get(episode_id, {}), 0)
+    battery_state = MissionBatteryState.from_profiles(dataset.agents[episode_id])
     remaining = list(range(len(tasks)))
     assignments = []
     for task in tasks:
@@ -1082,7 +1129,7 @@ def tanet_td3_assignments(actor: TANetActor, critic1: TANetCritic, critic2: TANe
     return assignments
 
 
-def run_hgrl_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
+def run_hgrl_paper_baseline(dataset: UAVDataset, episode_ids: Sequence[str], max_agents: int, epochs: int, seed: int, log_interval: int, device: str):
     capability = MethodCapability(
         "paper1_deep_hgrl_ugv_assisted",
         use_feedback=False,
@@ -1101,15 +1148,15 @@ def run_hgrl_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], ma
         epochs=epochs,
         lr=0.0025,
     )
-    model = train_graph_actor_critic(dataset, scenario_ids, max_agents, capability, seed)
+    model, history = train_graph_actor_critic(dataset, episode_ids, max_agents, capability, seed, log_interval, device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
     metrics = []
-    for scenario_id in scenario_ids:
-        assignments = env.rollout_assignments(model, scenario_id, capability)
+    for episode_id in episode_ids:
+        assignments = env.rollout_assignments(model, episode_id, capability)
         metrics.append(
             evaluate_graph_paths(
                 dataset,
-                dataset.scenarios[scenario_id],
+                dataset.episodes[episode_id],
                 assignments,
                 "paper1_deep_hgrl_ugv_assisted",
                 use_feedback_reward=False,
@@ -1118,10 +1165,10 @@ def run_hgrl_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], ma
                 target_tasks=max_agents,
             )
         )
-    return metrics
+    return metrics, history
 
 
-def run_cfr_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, episodes: int, seed: int):
+def run_cfr_paper_baseline(dataset: UAVDataset, episode_ids: Sequence[str], max_agents: int, episodes: int, seed: int, log_interval: int, device: str):
     capability = MethodCapability(
         "paper2_deep_cfr_marl",
         use_feedback=True,
@@ -1137,18 +1184,18 @@ def run_cfr_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max
         battery_weight=0.80,
         risk_weight=1.25,
         distance_weight=0.82,
-        epochs=max(8, episodes // 12),
+        epochs=episodes,
         lr=0.0022,
     )
-    model = train_graph_actor_critic(dataset, scenario_ids, max_agents, capability, seed)
+    model, history = train_graph_actor_critic(dataset, episode_ids, max_agents, capability, seed, log_interval, device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
     metrics = []
-    for scenario_id in scenario_ids:
+    for episode_id in episode_ids:
         metrics.append(
             evaluate_graph_paths(
                 dataset,
-                dataset.scenarios[scenario_id],
-                env.rollout_assignments(model, scenario_id, capability),
+                dataset.episodes[episode_id],
+                env.rollout_assignments(model, episode_id, capability),
                 "paper2_deep_cfr_marl",
                 use_feedback_reward=True,
                 allow_recharge_support=True,
@@ -1157,10 +1204,10 @@ def run_cfr_paper_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max
                 feedback_routing=True,
             )
         )
-    return metrics
+    return metrics, history
 
 
-def run_mwmaddpg_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
+def run_mwmaddpg_baseline(dataset: UAVDataset, episode_ids: Sequence[str], max_agents: int, epochs: int, seed: int, log_interval: int, device: str):
     capability = MethodCapability(
         "paper3_deep_mw_maddpg_uav_swarm",
         use_feedback=True,
@@ -1179,15 +1226,15 @@ def run_mwmaddpg_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_
         epochs=epochs,
         lr=0.0024,
     )
-    model = train_graph_actor_critic(dataset, scenario_ids, max_agents, capability, seed)
+    model, history = train_graph_actor_critic(dataset, episode_ids, max_agents, capability, seed, log_interval, device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
     metrics = []
-    for scenario_id in scenario_ids:
+    for episode_id in episode_ids:
         metrics.append(
             evaluate_graph_paths(
                 dataset,
-                dataset.scenarios[scenario_id],
-                env.rollout_assignments(model, scenario_id, capability),
+                dataset.episodes[episode_id],
+                env.rollout_assignments(model, episode_id, capability),
                 "paper3_deep_mw_maddpg_uav_swarm",
                 use_feedback_reward=True,
                 allow_recharge_support=True,
@@ -1196,10 +1243,10 @@ def run_mwmaddpg_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_
                 feedback_routing=True,
             )
         )
-    return metrics
+    return metrics, history
 
 
-def run_tanet_td3_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
+def run_tanet_td3_baseline(dataset: UAVDataset, episode_ids: Sequence[str], max_agents: int, epochs: int, seed: int, log_interval: int, device: str):
     capability = MethodCapability(
         "paper4_deep_tanet_td3_multi_uav",
         use_feedback=True,
@@ -1218,15 +1265,15 @@ def run_tanet_td3_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max
         epochs=epochs,
         lr=0.0023,
     )
-    model = train_graph_actor_critic(dataset, scenario_ids, max_agents, capability, seed)
+    model, history = train_graph_actor_critic(dataset, episode_ids, max_agents, capability, seed, log_interval, device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
     metrics = []
-    for scenario_id in scenario_ids:
+    for episode_id in episode_ids:
         metrics.append(
             evaluate_graph_paths(
                 dataset,
-                dataset.scenarios[scenario_id],
-                env.rollout_assignments(model, scenario_id, capability),
+                dataset.episodes[episode_id],
+                env.rollout_assignments(model, episode_id, capability),
                 "paper4_deep_tanet_td3_multi_uav",
                 use_feedback_reward=True,
                 allow_recharge_support=True,
@@ -1235,10 +1282,10 @@ def run_tanet_td3_baseline(dataset: UAVDataset, scenario_ids: Sequence[int], max
                 feedback_routing=True,
             )
         )
-    return metrics
+    return metrics, history
 
 
-def proposed_metrics(dataset: UAVDataset, scenario_ids: Sequence[int], max_agents: int, epochs: int, seed: int):
+def proposed_metrics(dataset: UAVDataset, episode_ids: Sequence[str], max_agents: int, epochs: int, seed: int, log_interval: int, device: str):
     capability = MethodCapability(
         "proposed_adaptive_hgrl",
         use_feedback=True,
@@ -1257,14 +1304,14 @@ def proposed_metrics(dataset: UAVDataset, scenario_ids: Sequence[int], max_agent
         epochs=epochs,
         lr=0.0020,
     )
-    model = train_graph_actor_critic(dataset, scenario_ids, max_agents, capability, seed)
+    model, history = train_graph_actor_critic(dataset, episode_ids, max_agents, capability, seed, log_interval, device)
     env = HeterogeneousGraphRLEnvironment(dataset, max_agents)
     metrics = []
-    for scenario_id in scenario_ids:
-        assignments = env.rollout_assignments(model, scenario_id, capability)
+    for episode_id in episode_ids:
+        assignments = env.rollout_assignments(model, episode_id, capability)
         learned_plan = evaluate_graph_paths(
             dataset,
-            dataset.scenarios[scenario_id],
+            dataset.episodes[episode_id],
             assignments,
             "proposed_adaptive_hgrl",
             use_feedback_reward=True,
@@ -1274,7 +1321,7 @@ def proposed_metrics(dataset: UAVDataset, scenario_ids: Sequence[int], max_agent
         )
         shielded_plan = simulate_method(
             dataset,
-            dataset.scenarios[scenario_id],
+            dataset.episodes[episode_id],
             "adaptive_feedback_hgrl",
             resolution=22,
             seed=13,
@@ -1285,7 +1332,7 @@ def proposed_metrics(dataset: UAVDataset, scenario_ids: Sequence[int], max_agent
             metrics.append(learned_plan)
         else:
             metrics.append(shielded_plan)
-    return metrics
+    return metrics, history
 
 
 def metric_objective(metric, target_tasks: int) -> float:
@@ -1304,7 +1351,7 @@ def summarize(method_name: str, metrics, target_tasks: int):
     n = max(1, len(metrics))
     return {
         "method": method_name,
-        "scenario_count": n,
+        "episode_count": n,
         "objective_mean": sum(metric_objective(m, target_tasks) for m in metrics) / n,
         "completed_mean": sum(m.completed for m in metrics) / n,
         "collision_risk_mean": sum(m.collision_risk for m in metrics) / n,
@@ -1317,13 +1364,16 @@ def summarize(method_name: str, metrics, target_tasks: int):
     }
 
 
-def write_method_outputs(out_dir: Path, method_name: str, metrics, target_tasks: int):
+def write_method_outputs(out_dir: Path, method_name: str, metrics, target_tasks: int, training_history: Optional[List[Dict[str, object]]] = None):
     out_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "summary": summarize(method_name, metrics, target_tasks),
-        "per_scenario": [metric_to_dict(m, target_tasks) for m in metrics],
+        "per_episode": [metric_to_dict(m, target_tasks) for m in metrics],
+        "training_history_rows": len(training_history or []),
     }
     (out_dir / "metrics.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    if training_history:
+        write_csv(out_dir / "training_history.csv", training_history)
     lines = [f"Method: {method_name}", "=" * (8 + len(method_name)), ""]
     for key, value in payload["summary"].items():
         if isinstance(value, float):
@@ -1331,14 +1381,17 @@ def write_method_outputs(out_dir: Path, method_name: str, metrics, target_tasks:
         else:
             lines.append(f"{key}: {value}")
     lines.append("")
-    lines.append("Per-scenario numeric outputs:")
-    for row in payload["per_scenario"]:
+    lines.append("Per-episode numeric outputs:")
+    for row in payload["per_episode"]:
         lines.append(
-            f"scenario={row['scenario_id']} objective={row['objective']:.4f} "
+            f"episode={row['episode_id']} objective={row['objective']:.4f} "
             f"completed={row['completed']} makespan={row['makespan']:.4f} "
             f"energy={row['energy_used']:.4f} min_battery={row.get('min_battery', 0):.4f} "
             f"risk={row['collision_risk']:.4f}"
         )
+    if training_history:
+        lines.append("")
+        lines.append(f"Training history rows written to training_history.csv: {len(training_history)}")
     (out_dir / "summary.txt").write_text("\n".join(lines), encoding="utf-8")
     return payload
 
@@ -1372,41 +1425,6 @@ def write_comparison(out_dir: Path, method_payloads: Dict[str, Dict], proposed_k
     (out_dir / "comparison_summary.txt").write_text("\n".join(lines), encoding="utf-8")
 
 
-def clamp(value: float, low: float, high: float) -> float:
-    return max(low, min(high, value))
-
-
-def method_label(method_name: str) -> str:
-    labels = {
-        "paper1_deep_hgrl_ugv_assisted": "Paper1-HGRL",
-        "paper2_deep_cfr_marl": "Paper2-CFR-MARL",
-        "paper3_deep_mw_maddpg_uav_swarm": "Paper3-MW-MADDPG",
-        "paper4_deep_tanet_td3_multi_uav": "Paper4-TANet-TD3",
-        "proposed_adaptive_hgrl": "Proposed-AFD-HGRL",
-    }
-    return labels.get(method_name, method_name)
-
-
-def base_research_metrics(summary: Dict, target_tasks: int, max_energy: float, max_makespan: float, max_objective: float) -> Dict[str, float]:
-    completion_rate = clamp(summary["completed_mean"] / max(1, target_tasks), 0.0, 1.0)
-    risk_safety = 1.0 - clamp(summary["collision_risk_mean"], 0.0, 1.0)
-    battery_health = clamp(summary["min_battery_mean"] / 0.30, 0.0, 1.0)
-    data_collection_rate = clamp(0.62 * completion_rate + 0.23 * risk_safety + 0.15 * battery_health, 0.0, 1.0)
-    normalized_makespan_index = clamp(summary["makespan_mean"] / max(1e-6, max_makespan), 0.05, 1.0)
-    completion_time_ratio = clamp(0.85 * completion_rate + 0.15 * (1.0 - normalized_makespan_index), 0.0, 1.0)
-    energy_consumption_index = clamp(summary["energy_used_mean"] / max(1e-6, max_energy), 0.05, 1.0)
-    objective_index = clamp(summary["objective_mean"] / max(1e-6, max_objective), 0.0, 1.0)
-    reward_index = clamp(1.0 - objective_index, 0.0, 1.0)
-    return {
-        "data_collection_rate": data_collection_rate,
-        "task_completion_rate": completion_rate,
-        "task_completion_time_ratio": completion_time_ratio,
-        "normalized_makespan_index": normalized_makespan_index,
-        "energy_consumption_index": energy_consumption_index,
-        "objective_index": objective_index,
-        "reward_index": reward_index,
-    }
-
 
 def write_csv(path: Path, rows: Sequence[Dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1418,202 +1436,36 @@ def write_csv(path: Path, rows: Sequence[Dict]) -> None:
         writer.writerows(rows)
 
 
-def write_research_graph_data(out_dir: Path, method_payloads: Dict[str, Dict], target_tasks: int) -> None:
-    graph_dir = out_dir / "research_graph_data"
-    summaries = {name: payload["summary"] for name, payload in method_payloads.items()}
-    max_energy = max(summary["energy_used_mean"] for summary in summaries.values())
-    max_makespan = max(summary["makespan_mean"] for summary in summaries.values())
-    max_objective = max(summary["objective_mean"] for summary in summaries.values())
-    bases = {
-        name: base_research_metrics(summary, target_tasks, max_energy, max_makespan, max_objective)
-        for name, summary in summaries.items()
-    }
-    method_order = list(method_payloads)
-    rank = {name: idx for idx, name in enumerate(method_order)}
-    proposed_key = "proposed_adaptive_hgrl"
-
-    training_rows = []
-    episodes = list(range(0, 40001, 1000))
-    for name in method_order:
-        base = bases[name]
-        is_proposed = name == proposed_key
-        start_completion = 0.16 + 0.025 * rank[name]
-        start_data = 0.20 + 0.020 * rank[name]
-        start_time = 0.20 + 0.020 * rank[name]
-        start_makespan = 0.96 - 0.015 * rank[name]
-        start_energy = 0.86 - 0.012 * rank[name]
-        convergence = 3.4 if is_proposed else 2.0 + 0.18 * rank[name]
-        for episode in episodes:
-            progress = 1.0 - math.exp(-convergence * episode / 40000.0)
-            wiggle = 0.010 * math.sin(episode / 1900.0 + rank[name]) + 0.006 * math.sin(episode / 700.0 + 2 * rank[name])
-            data_rate = clamp(start_data + (base["data_collection_rate"] - start_data) * progress + wiggle, 0.0, 1.0)
-            completion_rate = clamp(start_completion + (base["task_completion_rate"] - start_completion) * progress + wiggle, 0.0, 1.0)
-            time_ratio = clamp(start_time + (base["task_completion_time_ratio"] - start_time) * progress + wiggle * 0.4, 0.0, 1.0)
-            makespan_index = clamp(start_makespan + (base["normalized_makespan_index"] - start_makespan) * progress - wiggle * 0.4, 0.0, 1.2)
-            energy_index = clamp(start_energy + (base["energy_consumption_index"] - start_energy) * progress - wiggle * 0.3, 0.0, 1.2)
-            objective_index = clamp(1.0 + (base["objective_index"] - 1.0) * progress - wiggle * 0.2, 0.0, 1.2)
-            training_rows.append(
-                {
-                    "episode": episode,
-                    "method": name,
-                    "label": method_label(name),
-                    "data_collection_rate": f"{data_rate:.6f}",
-                    "task_completion_rate": f"{completion_rate:.6f}",
-                    "task_completion_time_ratio": f"{time_ratio:.6f}",
-                    "normalized_makespan_index": f"{makespan_index:.6f}",
-                    "energy_consumption_index": f"{energy_index:.6f}",
-                    "objective_index": f"{objective_index:.6f}",
-                    "reward_index": f"{clamp(1.0 - objective_index, 0.0, 1.0):.6f}",
-                }
-            )
-    write_csv(graph_dir / "training_curves_by_episode.csv", training_rows)
-
-    uav_rows = []
-    for uav_count in [4, 6, 8, 10, 12, 14, 16]:
-        scale = (uav_count - 8) / 8.0
-        for name in method_order:
-            base = bases[name]
-            is_proposed = name == proposed_key
-            gain = 0.13 if is_proposed else 0.055 + 0.010 * rank[name]
-            energy_penalty = 0.055 if is_proposed else 0.090
-            uav_rows.append(
-                {
-                    "number_of_uavs": uav_count,
-                    "method": name,
-                    "label": method_label(name),
-                    "data_collection_rate": f"{clamp(base['data_collection_rate'] + gain * scale, 0.0, 1.0):.6f}",
-                    "task_completion_rate": f"{clamp(base['task_completion_rate'] + gain * scale, 0.0, 1.0):.6f}",
-                    "task_completion_time_ratio": f"{clamp(base['task_completion_time_ratio'] + (0.10 if is_proposed else 0.055) * scale, 0.0, 1.0):.6f}",
-                    "normalized_makespan_index": f"{clamp(base['normalized_makespan_index'] - (0.10 if is_proposed else 0.055) * scale, 0.05, 1.2):.6f}",
-                    "energy_consumption_index": f"{clamp(base['energy_consumption_index'] + energy_penalty * scale, 0.05, 1.2):.6f}",
-                }
-            )
-    write_csv(graph_dir / "sensitivity_by_number_of_uavs.csv", uav_rows)
-
-    task_rows = []
-    for task_count in [4, 6, 8, 10, 12, 14, 16]:
-        stress = (task_count - 8) / 8.0
-        for name in method_order:
-            base = bases[name]
-            is_proposed = name == proposed_key
-            degradation = 0.060 if is_proposed else 0.115 + 0.010 * (rank[name] % 2)
-            task_rows.append(
-                {
-                    "number_of_tasks": task_count,
-                    "method": name,
-                    "label": method_label(name),
-                    "data_collection_rate": f"{clamp(base['data_collection_rate'] - degradation * stress, 0.0, 1.0):.6f}",
-                    "task_completion_rate": f"{clamp(base['task_completion_rate'] - degradation * stress, 0.0, 1.0):.6f}",
-                    "task_completion_time_ratio": f"{clamp(base['task_completion_time_ratio'] - degradation * stress, 0.0, 1.0):.6f}",
-                    "normalized_makespan_index": f"{clamp(base['normalized_makespan_index'] + degradation * stress, 0.05, 1.2):.6f}",
-                    "energy_consumption_index": f"{clamp(base['energy_consumption_index'] + 0.08 * stress, 0.05, 1.2):.6f}",
-                }
-            )
-    write_csv(graph_dir / "sensitivity_by_number_of_tasks.csv", task_rows)
-
-    obstacle_rows = []
-    for density_label, density_value in [("low", 0.25), ("medium", 0.50), ("high", 0.75), ("severe", 1.00)]:
-        stress = density_value - 0.50
-        for name in method_order:
-            base = bases[name]
-            is_proposed = name == proposed_key
-            robustness = 0.055 if is_proposed else 0.145
-            obstacle_rows.append(
-                {
-                    "obstacle_density": density_label,
-                    "obstacle_density_index": f"{density_value:.2f}",
-                    "method": name,
-                    "label": method_label(name),
-                    "task_completion_rate": f"{clamp(base['task_completion_rate'] - robustness * stress, 0.0, 1.0):.6f}",
-                    "collision_risk_index": f"{clamp(summaries[name]['collision_risk_mean'] + (0.09 if is_proposed else 0.20) * stress, 0.0, 1.0):.6f}",
-                    "task_completion_time_ratio": f"{clamp(base['task_completion_time_ratio'] - (0.05 if is_proposed else 0.12) * stress, 0.0, 1.0):.6f}",
-                    "normalized_makespan_index": f"{clamp(base['normalized_makespan_index'] + (0.05 if is_proposed else 0.12) * stress, 0.05, 1.2):.6f}",
-                    "energy_consumption_index": f"{clamp(base['energy_consumption_index'] + (0.04 if is_proposed else 0.08) * stress, 0.05, 1.2):.6f}",
-                }
-            )
-    write_csv(graph_dir / "sensitivity_by_obstacle_density.csv", obstacle_rows)
-
-    battery_rows = []
-    for stress_label, stress_value in [("normal", 0.00), ("mild", 0.15), ("medium", 0.30), ("high", 0.45), ("critical", 0.60)]:
-        for name in method_order:
-            base = bases[name]
-            is_proposed = name == proposed_key
-            battery_loss = 0.10 * stress_value if is_proposed else 0.28 * stress_value
-            battery_rows.append(
-                {
-                    "battery_stress": stress_label,
-                    "battery_stress_index": f"{stress_value:.2f}",
-                    "method": name,
-                    "label": method_label(name),
-                    "task_completion_rate": f"{clamp(base['task_completion_rate'] - battery_loss, 0.0, 1.0):.6f}",
-                    "energy_consumption_index": f"{clamp(base['energy_consumption_index'] + (0.06 if is_proposed else 0.13) * stress_value, 0.05, 1.2):.6f}",
-                    "min_battery_ratio": f"{clamp(summaries[name]['min_battery_mean'] / 0.30 - (0.20 if is_proposed else 0.42) * stress_value, 0.0, 1.0):.6f}",
-                    "recharge_need_index": f"{clamp((0.35 if is_proposed else 0.65) * stress_value, 0.0, 1.0):.6f}",
-                }
-            )
-    write_csv(graph_dir / "sensitivity_by_battery_stress.csv", battery_rows)
-
-    definitions = {
-        "source": "Graph data are anchored to the latest full benchmark summaries in outputs/deep_method_comparison_5methods and expanded into deterministic CPU-friendly experiment series for research-style plotting.",
-        "units": {
-            "episode": "training episode",
-            "number_of_uavs": "agents",
-            "number_of_tasks": "tasks",
-            "obstacle_density_index": "normalized obstacle-density stress, 0 to 1",
-            "battery_stress_index": "normalized battery-stress setting, 0 to 1",
-            "data_collection_rate": "ratio, 0 to 1, higher is better",
-            "task_completion_rate": "completed tasks / target tasks, 0 to 1, higher is better",
-            "task_completion_time_ratio": "deadline/time-success ratio, 0 to 1, higher is better",
-            "normalized_makespan_index": "normalized makespan index, lower is better",
-            "energy_consumption_index": "normalized energy-use index, lower is better",
-            "objective_index": "normalized multi-objective cost, lower is better",
-            "reward_index": "1 - objective_index, higher is better",
-            "collision_risk_index": "normalized path-risk index, lower is better",
-            "min_battery_ratio": "minimum remaining battery / 30% safety threshold, higher is better",
-            "recharge_need_index": "normalized recharge/support demand, lower is better",
-        },
-        "recommended_figures": [
-            "training_curves_by_episode.csv: task_completion_rate vs episode",
-            "training_curves_by_episode.csv: task_completion_time_ratio vs episode",
-            "training_curves_by_episode.csv: normalized_makespan_index vs episode",
-            "training_curves_by_episode.csv: energy_consumption_index vs episode",
-            "sensitivity_by_number_of_uavs.csv: four metrics vs number_of_uavs",
-            "sensitivity_by_number_of_tasks.csv: four metrics vs number_of_tasks",
-            "sensitivity_by_obstacle_density.csv: four metrics vs obstacle_density_index",
-            "sensitivity_by_battery_stress.csv: battery and energy metrics vs battery_stress_index",
-        ],
-    }
-    (graph_dir / "metric_definitions.json").write_text(json.dumps(definitions, indent=2), encoding="utf-8")
-
 
 def run(args: argparse.Namespace) -> None:
-    torch.set_num_threads(1)
+    if args.device != "cuda":
+        torch.set_num_threads(max(1, args.cpu_threads))
     dataset = UAVDataset(Path(args.dataset))
-    scenario_ids = sorted(dataset.scenarios, key=scenario_sort_key)
-    if args.scenarios:
-        wanted = {scenario_key(x) for x in args.scenarios.split(",")}
-        scenario_ids = [sid for sid in scenario_ids if sid in wanted]
+    episode_ids = sorted(dataset.episodes, key=episode_sort_key)
+    if args.episode_filter:
+        wanted = {episode_key(x) for x in args.episode_filter.split(",")}
+        episode_ids = [sid for sid in episode_ids if sid in wanted]
     out = Path(args.out)
 
     print("Training and evaluating Paper 1 deep HGRL baseline...")
-    hgrl = run_hgrl_paper_baseline(dataset, scenario_ids, args.max_agents, args.hgrl_epochs, args.seed)
-    hgrl_payload = write_method_outputs(out / "paper1_deep_hgrl_ugv_assisted", "paper1_deep_hgrl_ugv_assisted", hgrl, args.max_agents)
+    hgrl, hgrl_history = run_hgrl_paper_baseline(dataset, episode_ids, args.max_agents, args.hgrl_episodes, args.seed, args.log_interval, args.device)
+    hgrl_payload = write_method_outputs(out / "paper1_deep_hgrl_ugv_assisted", "paper1_deep_hgrl_ugv_assisted", hgrl, args.max_agents, hgrl_history)
 
     print("Training and evaluating Paper 2 deep CFR-MARL baseline...")
-    cfr = run_cfr_paper_baseline(dataset, scenario_ids, args.max_agents, args.cfr_episodes, args.seed + 31)
-    cfr_payload = write_method_outputs(out / "paper2_deep_cfr_marl", "paper2_deep_cfr_marl", cfr, args.max_agents)
+    cfr, cfr_history = run_cfr_paper_baseline(dataset, episode_ids, args.max_agents, args.cfr_episodes, args.seed + 31, args.log_interval, args.device)
+    cfr_payload = write_method_outputs(out / "paper2_deep_cfr_marl", "paper2_deep_cfr_marl", cfr, args.max_agents, cfr_history)
 
     print("Training and evaluating Paper 3 MW-MADDPG UAV-swarm baseline...")
-    mwmaddpg = run_mwmaddpg_baseline(dataset, scenario_ids, args.max_agents, args.mwmaddpg_epochs, args.seed + 47)
-    mwmaddpg_payload = write_method_outputs(out / "paper3_deep_mw_maddpg_uav_swarm", "paper3_deep_mw_maddpg_uav_swarm", mwmaddpg, args.max_agents)
+    mwmaddpg, mwmaddpg_history = run_mwmaddpg_baseline(dataset, episode_ids, args.max_agents, args.mwmaddpg_episodes, args.seed + 47, args.log_interval, args.device)
+    mwmaddpg_payload = write_method_outputs(out / "paper3_deep_mw_maddpg_uav_swarm", "paper3_deep_mw_maddpg_uav_swarm", mwmaddpg, args.max_agents, mwmaddpg_history)
 
     print("Training and evaluating Paper 4 TANet-TD3-inspired multi-UAV baseline...")
-    tanet = run_tanet_td3_baseline(dataset, scenario_ids, args.max_agents, args.tanet_epochs, args.seed + 63)
-    tanet_payload = write_method_outputs(out / "paper4_deep_tanet_td3_multi_uav", "paper4_deep_tanet_td3_multi_uav", tanet, args.max_agents)
+    tanet, tanet_history = run_tanet_td3_baseline(dataset, episode_ids, args.max_agents, args.tanet_episodes, args.seed + 63, args.log_interval, args.device)
+    tanet_payload = write_method_outputs(out / "paper4_deep_tanet_td3_multi_uav", "paper4_deep_tanet_td3_multi_uav", tanet, args.max_agents, tanet_history)
 
     print("Evaluating proposed adaptive HGRL method on the same dataset...")
-    proposed = proposed_metrics(dataset, scenario_ids, args.max_agents, args.proposed_epochs, args.seed + 79)
-    proposed_payload = write_method_outputs(out / "proposed_adaptive_hgrl", "proposed_adaptive_hgrl", proposed, args.max_agents)
+    proposed, proposed_history = proposed_metrics(dataset, episode_ids, args.max_agents, args.proposed_episodes, args.seed + 79, args.log_interval, args.device)
+    proposed_payload = write_method_outputs(out / "proposed_adaptive_hgrl", "proposed_adaptive_hgrl", proposed, args.max_agents, proposed_history)
 
     method_payloads = {
         "paper1_deep_hgrl_ugv_assisted": hgrl_payload,
@@ -1627,7 +1479,22 @@ def run(args: argparse.Namespace) -> None:
         method_payloads,
         "proposed_adaptive_hgrl",
     )
-    write_research_graph_data(out, method_payloads, args.max_agents)
+    config = {
+        "dataset": args.dataset,
+        "benchmark_episode_count": len(episode_ids),
+        "max_agents": args.max_agents,
+        "device": args.device,
+        "log_interval": args.log_interval,
+        "training_episodes": {
+            "paper1_deep_hgrl_ugv_assisted": args.hgrl_episodes,
+            "paper2_deep_cfr_marl": args.cfr_episodes,
+            "paper3_deep_mw_maddpg_uav_swarm": args.mwmaddpg_episodes,
+            "paper4_deep_tanet_td3_multi_uav": args.tanet_episodes,
+            "proposed_adaptive_hgrl": args.proposed_episodes,
+        },
+        "note": "No graphs or tables are generated by this runner; it writes numeric per-episode evaluation and actual training_history.csv logs for each method.",
+    }
+    (out / "run_config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     print(f"Wrote numeric outputs to {out.resolve()}")
 
 
@@ -1636,14 +1503,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", default="data_raw/complete_adaptive_benchmark")
     parser.add_argument("--out", default="outputs/deep_method_comparison")
     parser.add_argument("--max-agents", type=int, default=8)
-    parser.add_argument("--hgrl-epochs", type=int, default=45)
-    parser.add_argument("--cfr-episodes", type=int, default=320)
-    parser.add_argument("--mwmaddpg-epochs", type=int, default=35)
-    parser.add_argument("--tanet-epochs", type=int, default=45)
-    parser.add_argument("--proposed-epochs", type=int, default=55)
+    parser.add_argument("--training-episodes", type=int, default=40000)
+    parser.add_argument("--hgrl-episodes", type=int, default=None)
+    parser.add_argument("--cfr-episodes", type=int, default=None)
+    parser.add_argument("--mwmaddpg-episodes", type=int, default=None)
+    parser.add_argument("--tanet-episodes", type=int, default=None)
+    parser.add_argument("--proposed-episodes", type=int, default=None)
+    parser.add_argument("--log-interval", type=int, default=100)
+    parser.add_argument("--device", default="auto", choices=["auto", "cuda", "cpu"])
+    parser.add_argument("--cpu-threads", type=int, default=4)
     parser.add_argument("--seed", type=int, default=91)
-    parser.add_argument("--scenarios", default="")
-    return parser.parse_args()
+    parser.add_argument("--episode-filter", default="")
+    args = parser.parse_args()
+    args.hgrl_episodes = args.hgrl_episodes or args.training_episodes
+    args.cfr_episodes = args.cfr_episodes or args.training_episodes
+    args.mwmaddpg_episodes = args.mwmaddpg_episodes or args.training_episodes
+    args.tanet_episodes = args.tanet_episodes or args.training_episodes
+    args.proposed_episodes = args.proposed_episodes or args.training_episodes
+    return args
 
 
 if __name__ == "__main__":

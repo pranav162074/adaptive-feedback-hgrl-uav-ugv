@@ -1,4 +1,4 @@
-scenario_id,agent_id,type,start_x,start_y,speed,battery_capacity,battery_start,energy_rate,comm_range,payload_capacity,sensor_range,can_recharge,recharge_rate
+episode_id,agent_id,type,start_x,start_y,speed,battery_capacity,battery_start,energy_rate,comm_range,payload_capacity,sensor_range,can_recharge,recharge_rate
 S1,UGV_0,UGV,0.08,0.1,0.55,320,300,0.2,0.48,8,0.18,true,4.0
 S1,UGV_1,UGV,0.16,0.22,0.5900000000000001,320,288,0.2,0.48,9,0.18,true,4.0
 S1,UAV_0,UAV,0.05,0.86,1.15,100,64,0.75,0.34,2,0.12,false,0.0

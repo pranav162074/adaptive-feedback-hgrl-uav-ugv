@@ -1,4 +1,4 @@
-scenario_id,cell_id,x,y,terrain_cost
+episode_id,cell_id,x,y,terrain_cost
 S1,0,0.05,0.05,1.068
 S1,1,0.15,0.05,1.0494
 S1,2,0.25,0.05,1.0486
