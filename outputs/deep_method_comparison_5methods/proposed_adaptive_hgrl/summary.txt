@@ -1,0 +1,118 @@
+Method: proposed_adaptive_hgrl
+==============================
+
+method: proposed_adaptive_hgrl
+episode_count: 100
+objective_mean: 79.207556
+completed_mean: 7.990000
+collision_risk_mean: 0.088380
+makespan_mean: 1.963945
+energy_used_mean: 5.803034
+min_battery_mean: 0.204741
+battery_warnings_total: 800
+recharge_visits_total: 579
+graph_updates_total: 11
+
+Per-episode numeric outputs:
+episode=S1 objective=61.6541 completed=8 makespan=1.7048 energy=5.7372 min_battery=0.2044 risk=0.0477
+episode=S2 objective=60.8026 completed=8 makespan=1.7884 energy=5.7557 min_battery=0.2211 risk=0.0237
+episode=S3 objective=68.3272 completed=8 makespan=1.7848 energy=5.9966 min_battery=0.1867 risk=0.0718
+episode=S4 objective=66.2310 completed=8 makespan=1.8197 energy=5.7403 min_battery=0.2045 risk=0.0907
+episode=S5 objective=71.5669 completed=8 makespan=1.8559 energy=5.7595 min_battery=0.2206 risk=0.1248
+episode=S6 objective=74.8429 completed=8 makespan=1.8756 energy=5.9950 min_battery=0.1828 risk=0.1517
+episode=S7 objective=61.9494 completed=8 makespan=1.8440 energy=5.7386 min_battery=0.2044 risk=0.0363
+episode=S8 objective=76.1456 completed=8 makespan=2.2940 energy=5.7698 min_battery=0.2200 risk=0.0971
+episode=S9 objective=65.0699 completed=8 makespan=1.8755 energy=6.0026 min_battery=0.1837 risk=0.0186
+episode=S10 objective=65.8699 completed=8 makespan=1.8324 energy=5.7356 min_battery=0.2028 risk=0.0911
+episode=S11 objective=67.9943 completed=8 makespan=1.8673 energy=5.7578 min_battery=0.2213 risk=0.0943
+episode=S12 objective=74.1395 completed=8 makespan=2.0021 energy=5.9993 min_battery=0.1848 risk=0.1317
+episode=S13 objective=61.8009 completed=8 makespan=1.7836 energy=5.7341 min_battery=0.2050 risk=0.0494
+episode=S14 objective=66.0316 completed=8 makespan=1.9311 energy=5.7595 min_battery=0.2192 risk=0.0818
+episode=S15 objective=66.7076 completed=8 makespan=1.8871 energy=5.9920 min_battery=0.1838 risk=0.0636
+episode=S16 objective=64.7001 completed=8 makespan=1.7848 energy=5.7369 min_battery=0.2026 risk=0.0712
+episode=S17 objective=66.1328 completed=8 makespan=1.7163 energy=5.7499 min_battery=0.2224 risk=0.1058
+episode=S18 objective=73.5690 completed=8 makespan=1.9741 energy=5.9961 min_battery=0.1869 risk=0.1140
+episode=S19 objective=65.6626 completed=8 makespan=2.1576 energy=5.7451 min_battery=0.2048 risk=0.0521
+episode=S20 objective=76.5243 completed=8 makespan=2.0382 energy=5.7635 min_battery=0.2184 risk=0.1579
+episode=S21 objective=67.1221 completed=8 makespan=2.0345 energy=6.0030 min_battery=0.1827 risk=0.0315
+episode=S22 objective=63.2331 completed=8 makespan=2.0810 energy=5.7478 min_battery=0.2025 risk=0.0279
+episode=S23 objective=74.5990 completed=8 makespan=2.0449 energy=5.7566 min_battery=0.2184 risk=0.1370
+episode=S24 objective=79.1868 completed=8 makespan=2.2251 energy=5.7857 min_battery=0.2241 risk=0.1570
+episode=S25 objective=66.5677 completed=8 makespan=2.0217 energy=5.7390 min_battery=0.2060 risk=0.0724
+episode=S26 objective=68.9414 completed=8 makespan=1.9021 energy=5.7501 min_battery=0.2198 risk=0.1116
+episode=S27 objective=69.3381 completed=8 makespan=1.9607 energy=6.0001 min_battery=0.1815 risk=0.0433
+episode=S28 objective=64.3745 completed=8 makespan=1.7082 energy=5.7281 min_battery=0.2037 risk=0.0859
+episode=S29 objective=68.6910 completed=8 makespan=1.7766 energy=5.7455 min_battery=0.2205 risk=0.1159
+episode=S30 objective=79.6811 completed=8 makespan=1.8824 energy=5.9951 min_battery=0.1801 risk=0.1918
+episode=S31 objective=67.0441 completed=8 makespan=1.8637 energy=5.7467 min_battery=0.2026 risk=0.0852
+episode=S32 objective=66.6836 completed=8 makespan=1.7378 energy=5.7441 min_battery=0.2232 risk=0.1105
+episode=S33 objective=66.7478 completed=8 makespan=1.9678 energy=5.9962 min_battery=0.1823 risk=0.0404
+episode=S34 objective=64.4375 completed=8 makespan=1.9015 energy=5.7394 min_battery=0.2056 risk=0.0551
+episode=S35 objective=69.7190 completed=8 makespan=2.0103 energy=5.7612 min_battery=0.2181 risk=0.0923
+episode=S36 objective=1139.5244 completed=7 makespan=1.8900 energy=5.5172 min_battery=0.2133 risk=0.0763
+episode=S37 objective=66.3968 completed=8 makespan=1.9442 energy=5.7451 min_battery=0.2011 risk=0.0809
+episode=S38 objective=68.2063 completed=8 makespan=1.9348 energy=5.7515 min_battery=0.2195 risk=0.1029
+episode=S39 objective=65.3837 completed=8 makespan=1.9326 energy=5.9909 min_battery=0.1846 risk=0.0409
+episode=S40 objective=61.7862 completed=8 makespan=1.9923 energy=5.7300 min_battery=0.2037 risk=0.0460
+episode=S41 objective=62.5518 completed=8 makespan=1.9195 energy=5.5657 min_battery=0.2214 risk=0.0589
+episode=S42 objective=71.8210 completed=8 makespan=1.8736 energy=5.9912 min_battery=0.1825 risk=0.1195
+episode=S43 objective=66.7594 completed=8 makespan=2.0362 energy=5.5491 min_battery=0.2075 risk=0.0956
+episode=S44 objective=85.9128 completed=8 makespan=2.2709 energy=5.7720 min_battery=0.2188 risk=0.2741
+episode=S45 objective=65.7015 completed=8 makespan=1.9463 energy=5.9889 min_battery=0.1841 risk=0.0539
+episode=S46 objective=60.7582 completed=8 makespan=1.6734 energy=5.7295 min_battery=0.2060 risk=0.0579
+episode=S47 objective=66.1722 completed=8 makespan=1.8376 energy=5.7387 min_battery=0.2234 risk=0.1029
+episode=S48 objective=77.9286 completed=8 makespan=2.9312 energy=5.7810 min_battery=0.2200 risk=0.1509
+episode=S49 objective=65.4865 completed=8 makespan=1.5682 energy=5.7208 min_battery=0.2086 risk=0.1289
+episode=S50 objective=69.9445 completed=8 makespan=1.8870 energy=5.7518 min_battery=0.2211 risk=0.1409
+episode=S51 objective=59.7717 completed=8 makespan=1.4831 energy=5.9674 min_battery=0.1823 risk=0.0349
+episode=S52 objective=60.6679 completed=8 makespan=1.9508 energy=5.7301 min_battery=0.2068 risk=0.0429
+episode=S53 objective=63.3991 completed=8 makespan=1.8637 energy=5.7497 min_battery=0.2213 risk=0.0704
+episode=S54 objective=69.5603 completed=8 makespan=2.0426 energy=5.9920 min_battery=0.1822 risk=0.0746
+episode=S55 objective=64.2022 completed=8 makespan=1.6455 energy=5.7287 min_battery=0.2076 risk=0.0928
+episode=S56 objective=74.9072 completed=8 makespan=1.9015 energy=5.7630 min_battery=0.2200 risk=0.1244
+episode=S57 objective=69.2183 completed=8 makespan=2.1494 energy=5.9973 min_battery=0.1841 risk=0.0587
+episode=S58 objective=60.3441 completed=8 makespan=1.9950 energy=5.5367 min_battery=0.2064 risk=0.0325
+episode=S59 objective=67.4309 completed=8 makespan=2.0661 energy=5.7576 min_battery=0.2214 risk=0.0778
+episode=S60 objective=72.3863 completed=8 makespan=2.0705 energy=5.9917 min_battery=0.1829 risk=0.0933
+episode=S61 objective=63.4480 completed=8 makespan=2.0183 energy=5.7360 min_battery=0.2083 risk=0.0572
+episode=S62 objective=75.7355 completed=8 makespan=1.9415 energy=5.7574 min_battery=0.2196 risk=0.1800
+episode=S63 objective=68.7235 completed=8 makespan=2.2052 energy=5.9902 min_battery=0.1861 risk=0.0506
+episode=S64 objective=62.6759 completed=8 makespan=2.0973 energy=5.7473 min_battery=0.2083 risk=0.0202
+episode=S65 objective=60.2334 completed=8 makespan=1.6851 energy=5.7452 min_battery=0.2196 risk=0.0431
+episode=S66 objective=67.3090 completed=8 makespan=2.0362 energy=5.9874 min_battery=0.1846 risk=0.0584
+episode=S67 objective=65.4897 completed=8 makespan=2.0984 energy=5.7289 min_battery=0.2060 risk=0.0935
+episode=S68 objective=79.2650 completed=8 makespan=2.1450 energy=5.7700 min_battery=0.2187 risk=0.1520
+episode=S69 objective=71.7563 completed=8 makespan=1.9984 energy=5.9949 min_battery=0.1824 risk=0.0931
+episode=S70 objective=59.6694 completed=8 makespan=1.9868 energy=5.7335 min_battery=0.2052 risk=0.0075
+episode=S71 objective=60.9353 completed=8 makespan=1.8621 energy=5.7508 min_battery=0.2231 risk=0.0065
+episode=S72 objective=111.2867 completed=8 makespan=2.0171 energy=5.4886 min_battery=0.2132 risk=0.0528
+episode=S73 objective=62.7104 completed=8 makespan=1.6977 energy=5.7225 min_battery=0.2085 risk=0.0789
+episode=S74 objective=73.0889 completed=8 makespan=2.0773 energy=5.7528 min_battery=0.2224 risk=0.0929
+episode=S75 objective=72.8731 completed=8 makespan=1.8573 energy=5.9981 min_battery=0.1817 risk=0.0993
+episode=S76 objective=66.0039 completed=8 makespan=2.0542 energy=5.7392 min_battery=0.2025 risk=0.0765
+episode=S77 objective=60.6861 completed=8 makespan=1.9705 energy=5.7536 min_battery=0.2207 risk=0.0093
+episode=S78 objective=69.1952 completed=8 makespan=1.9392 energy=5.9943 min_battery=0.1823 risk=0.0612
+episode=S79 objective=67.5566 completed=8 makespan=1.7389 energy=5.7323 min_battery=0.2028 risk=0.1079
+episode=S80 objective=75.7314 completed=8 makespan=2.0334 energy=5.7549 min_battery=0.2189 risk=0.1662
+episode=S81 objective=74.5800 completed=8 makespan=2.1215 energy=5.9956 min_battery=0.1824 risk=0.1416
+episode=S82 objective=65.1677 completed=8 makespan=2.1100 energy=5.7322 min_battery=0.2087 risk=0.0764
+episode=S83 objective=60.8608 completed=8 makespan=1.8179 energy=5.7526 min_battery=0.2201 risk=0.0256
+episode=S84 objective=70.4967 completed=8 makespan=2.0426 energy=5.9924 min_battery=0.1825 risk=0.1022
+episode=S85 objective=64.7861 completed=8 makespan=1.9579 energy=5.7371 min_battery=0.2087 risk=0.0764
+episode=S86 objective=70.2420 completed=8 makespan=1.9590 energy=5.7484 min_battery=0.2220 risk=0.1309
+episode=S87 objective=81.9143 completed=8 makespan=3.3178 energy=5.7927 min_battery=0.2179 risk=0.1457
+episode=S88 objective=67.2402 completed=8 makespan=2.1494 energy=5.7177 min_battery=0.2083 risk=0.1358
+episode=S89 objective=63.6012 completed=8 makespan=1.8870 energy=5.7515 min_battery=0.2193 risk=0.0641
+episode=S90 objective=74.6359 completed=8 makespan=2.1215 energy=6.0007 min_battery=0.1830 risk=0.1278
+episode=S91 objective=61.1815 completed=8 makespan=2.0217 energy=5.7228 min_battery=0.2083 risk=0.0642
+episode=S92 objective=70.0337 completed=8 makespan=1.8704 energy=5.7454 min_battery=0.2215 risk=0.1321
+episode=S93 objective=75.2961 completed=8 makespan=1.9544 energy=5.8014 min_battery=0.1808 risk=0.1427
+episode=S94 objective=68.2345 completed=8 makespan=2.0612 energy=5.7277 min_battery=0.2053 risk=0.1356
+episode=S95 objective=66.0965 completed=8 makespan=2.0378 energy=5.7537 min_battery=0.2215 risk=0.0588
+episode=S96 objective=64.5634 completed=8 makespan=1.8900 energy=5.9845 min_battery=0.1824 risk=0.0439
+episode=S97 objective=62.2069 completed=8 makespan=1.9428 energy=5.7309 min_battery=0.2026 risk=0.0619
+episode=S98 objective=73.4693 completed=8 makespan=1.9920 energy=5.7579 min_battery=0.2202 risk=0.1419
+episode=S99 objective=74.0941 completed=8 makespan=2.0936 energy=5.9934 min_battery=0.1808 risk=0.1290
+episode=S100 objective=69.3707 completed=8 makespan=1.8440 energy=5.7451 min_battery=0.2009 risk=0.1284
+
+Training history rows written to training_history.csv: 401
