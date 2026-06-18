@@ -1,0 +1,13 @@
+{
+  "Obj. score": "multi-objective mission cost; lower is better",
+  "TC (%)": "completed tasks / assigned tasks * 100; higher is better",
+  "TCR": "task completion time ratio represented by makespan in normalized mission time; lower is better",
+  "CR (%)": "collision/path risk percentage; lower is better",
+  "Energy": "mission energy used; lower is better",
+  "AR": "aggregate reward-style score computed as 10000/objective; higher is better",
+  "Path len.": "average path length",
+  "Min battery": "minimum remaining battery ratio",
+  "Graph updates": "adaptive graph feedback updates; higher indicates active feedback adaptation",
+  "Fairness std": "load-balance/fairness standard deviation; lower is better",
+  "source": "All table values are mean +/- standard deviation over the 100 per-episode records from the 40,000-training-episode Kaggle run."
+}
