@@ -21,14 +21,14 @@ Edge = Tuple[Node, Node]
 
 def episode_key(value) -> str:
     text = str(value).strip()
-    if text.upper().startswith("S"):
-        return "S" + str(int(text[1:]))
-    return "S" + str(int(text) + 1)
+    if text.upper().startswith("E"):
+        return "E" + str(int(text[1:]))
+    return "E" + str(int(text) + 1)
 
 
 def episode_number(value) -> int:
     text = str(value).strip()
-    if text.upper().startswith("S"):
+    if text.upper().startswith("E"):
         return int(text[1:])
     return int(text) + 1
 
@@ -43,6 +43,12 @@ class Episode:
     density: float
     clustered: str
     dynamic: str
+    poi_count: int = 12
+    observation_range_m: float = 90.0
+    communication_range_m: float = 150.0
+    bandwidth_mbps: float = 12.0
+    latency_ms: float = 25.0
+    packet_loss_rate: float = 0.02
 
 
 @dataclass(frozen=True)
@@ -55,6 +61,11 @@ class AgentTask:
     deadline: float = 100.0
     payload_required: float = 1.0
     requires_ugv: bool = False
+    data_volume_mbit: float = 5.0
+    required_data_mbit: float = 5.0
+    compute_cycles_per_bit: float = 800.0
+    collection_deadline_s: float = 100.0
+    offload_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -71,6 +82,11 @@ class AgentProfile:
     sensor_range: float
     can_recharge: bool
     recharge_rate: float
+    cpu_ghz: float = 2.0
+    bandwidth_mbps: float = 12.0
+    latency_ms: float = 25.0
+    processing_energy_wh_per_mbit: float = 0.04
+    communication_energy_wh_per_mbit: float = 0.025
 
 
 @dataclass
@@ -122,7 +138,18 @@ class UAVDataset:
         with (self.root / "episodes.csv").open(newline="") as f:
             for row in csv.DictReader(f):
                 sid = episode_key(row["episode_id"])
-                rows[sid] = Episode(sid, float(row["density"]), row["clustered"], row["dynamic"])
+                rows[sid] = Episode(
+                    sid,
+                    float(row["density"]),
+                    row["clustered"],
+                    row["dynamic"],
+                    int(float(row.get("poi_count", 12))),
+                    float(row.get("observation_range_m", 90.0)),
+                    float(row.get("communication_range_m", 150.0)),
+                    float(row.get("bandwidth_mbps", 12.0)),
+                    float(row.get("latency_ms", 25.0)),
+                    float(row.get("packet_loss_rate", 0.02)),
+                )
         return rows
 
     def _load_tasks(self) -> Dict[str, List[AgentTask]]:
@@ -157,6 +184,11 @@ class UAVDataset:
                             float(row.get("deadline", 100.0)),
                             float(row.get("payload_required", 1.0)),
                             row.get("requires_ugv", "false").lower() == "true",
+                            float(row.get("data_volume_mbit", 5.0)),
+                            float(row.get("required_data_mbit", row.get("data_volume_mbit", 5.0))),
+                            float(row.get("compute_cycles_per_bit", 800.0)),
+                            float(row.get("collection_deadline_s", row.get("deadline", 100.0))),
+                            row.get("offload_required", "false").lower() == "true",
                         )
                     )
             return tasks
@@ -208,6 +240,11 @@ class UAVDataset:
                         float(row["sensor_range"]),
                         row.get("can_recharge", "false").lower() == "true",
                         float(row.get("recharge_rate", 0.0)),
+                        float(row.get("cpu_ghz", 2.0)),
+                        float(row.get("bandwidth_mbps", 12.0)),
+                        float(row.get("latency_ms", 25.0)),
+                        float(row.get("processing_energy_wh_per_mbit", 0.04)),
+                        float(row.get("communication_energy_wh_per_mbit", 0.025)),
                     )
                     agents[sid][profile.agent_id] = profile
         for sid, task_rows in self.tasks.items():

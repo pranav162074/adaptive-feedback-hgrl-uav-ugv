@@ -37,10 +37,10 @@ It uses episode naming everywhere:
 - `feedback_events.csv`: centralized risk feedback events.
 - `uav_positions.csv`: compatibility mapping for UAV start/goal style loaders.
 
-Regenerate the 100-episode benchmark:
+Regenerate the 40,000-episode benchmark:
 
 ```powershell
-python .\generate_complete_benchmark.py --episodes 100
+python .\generate_complete_benchmark.py --episodes 40000
 ```
 
 ## Main 5-Method Deep Runner
@@ -58,14 +58,14 @@ python run_deep_existing_methods.py \
   --dataset data_raw/complete_adaptive_benchmark \
   --out outputs/deep_method_comparison_5methods \
   --training-episodes 40000 \
-  --log-interval 100 \
+  --log-interval 1 \
   --device auto
 ```
 
 For a quick local sanity run only:
 
 ```powershell
-python .\run_deep_existing_methods.py --training-episodes 2 --log-interval 1 --episode-filter S1,S2 --device cpu --out outputs/smoke_5methods_episode_upgrade
+python .\run_deep_existing_methods.py --training-episodes 2 --log-interval 1 --episode-filter E1,E2 --eval-episodes 2 --device cpu --out outputs/smoke_5methods_episode_upgrade
 ```
 
 That smoke run requires PyTorch locally. The full intended run is Kaggle GPU.
@@ -108,4 +108,4 @@ It writes numeric outputs only by default. Add `--write-visuals` only when you e
 python .\centralized_graph_rl.py --dataset data_raw/complete_adaptive_benchmark --out outputs/centralized_graph_rl --training-episodes 40000
 ```
 
-Use `--episode-filter S1,S2` for tiny checks.
+Use `--episode-filter E1,E2` for tiny checks.
